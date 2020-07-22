@@ -1,0 +1,23 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+yapf = "*"
+flake8 = "*"
+pep8-naming = "*"
+pytest = "*"
+
+[packages]
+delphai-backend-utils = {git = "https://github.com/delphai/delphai-backend-utils.git", editable = true}
+grpcio = "*"
+grpcio-tools = "*"
+pymongo = "*"
+grpcio-reflection = "*"
+master = {git = "https://github.com/wearefair/protobuf-to-dict"}
+azure-storage-blob = "*"
+schematics = "*"
+
+[requires]
+python_version = "3.6"

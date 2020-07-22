@@ -1,0 +1,52 @@
+// Delphai articles [micro]service proto3 declaration
+
+syntax = "proto3";
+
+package delphai.articles_service;
+
+service Articles {
+  // Retrieves articles of a company
+  rpc get_articles(ArticlesRequest) returns (ArticlesResponse) {}
+  rpc add_articles(AddArticlesRequest) returns (AddArticlesResponse) {}
+}
+
+message ArticlesRequest {
+  string company_id = 1;
+  int32 start_row = 2;
+  int32 fetch_count = 3;
+}
+
+message ArticlesResponse {
+  message JobPost {
+    string title = 1;
+    string date = 2;
+    string link = 3;
+    string location = 4;
+  }
+  repeated JobPost posts = 1;
+  int32 total_posts = 2;
+}
+
+message AddArticlesRequest {
+  message JobPostEntry {
+    string title = 1;
+    string date = 2;
+    string link = 3;
+    string location = 4;
+    string website = 5;
+    string company = 6;
+    string city = 7;
+    string state = 8;
+    string country = 9;
+    string html = 10;
+    string overview_html = 11;
+    string overview_url = 12;
+    string job_list_html = 13;
+    string job_list_url = 14;
+  }
+  repeated JobPostEntry posts = 1;
+}
+
+message AddArticlesResponse {
+  int32 total_posts = 1;
+}

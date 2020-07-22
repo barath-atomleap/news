@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+
+# Environments
+.env
+.venv
+config/development.yml
+
+service_pb2*
+requirements.txt

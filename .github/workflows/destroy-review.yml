@@ -1,0 +1,47 @@
+name: destroy-review
+
+on: [delete]
+
+jobs:
+  destroy-review-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/aks-set-context@v1
+        with:
+          creds: "${{ secrets.AZURE_CREDENTIALS_REVIEW }}"
+          resource-group: delphai-review
+          cluster-name: delphai-review
+      - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")
+      - run: echo ::set-env name=GITHUB_REF_SLUG::$(echo "${{ github.event.ref }}" | iconv -t ascii//TRANSLIT | sed -r s/[^a-zA-Z0-9]+/-/g | sed -r s/^-+\|-+$//g | tr A-Z a-z)
+      - run: |
+          cat << EOF > main.tf.template
+          terraform {
+            backend "azurerm" {
+              resource_group_name  = "base-infrastructure-terraform"
+              key                  = "${REPOSITORY_NAME}-${GITHUB_REF_SLUG}.tfstate"
+              storage_account_name = "delphaireview"
+              container_name       = "delphai-review-terraform-state"
+            }
+          }
+          module "delphai-app" {
+            source      = "github.com/delphai/infrastructure//modules/delphai-app"
+            app_port    = 8080
+            delphai_env = "review"
+            image       = "delphaireview.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}"
+            name        = "${GITHUB_REF_SLUG}"
+            namespace   = "${REPOSITORY_NAME}"
+            has_ingress = false
+          }
+          EOF
+      - uses: nowactions/envsubst@v1
+        with:
+          input: ./main.tf.template
+          output: ./main.tf
+      - run: mkdir -p ~/.kube && cp ${KUBECONFIG} ~/.kube/config
+      - uses: hashicorp/setup-terraform@v1
+      - run: terraform init && terraform destroy -force
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID_REVIEW }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET_REVIEW }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID_REVIEW }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID_REVIEW }}
