@@ -1,4 +1,5 @@
 from bson import ObjectId
+import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
 from utils.utils import clean_url, save_blob
 import logging
@@ -20,7 +21,7 @@ def articles_data(company_id, start_row, fetch_count):
   }, {
       "$project": {
           "_id": 0,
-          "location": 1,
+          "description": 1,
           "date": {
               '$dateToString': {
                   'format': '%Y-%m-%d',
@@ -41,7 +42,7 @@ def articles_data(company_id, start_row, fetch_count):
           "total": [{
               "$count": "count"
           }],
-          "posts": [{
+          "articles": [{
               "$skip": skip
           }, {
               "$limit": int(fetch_count)
@@ -50,7 +51,7 @@ def articles_data(company_id, start_row, fetch_count):
   }])
 
   results = list(news_articles)[0]
-  #   print(results)
+  results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
 
   return results
 
@@ -58,14 +59,15 @@ def articles_data(company_id, start_row, fetch_count):
 def save_articles(company_url, page_url, html, date):
   try:
     company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1})
-    text, title, scope = 'boilerplating(html)'
+    text, title, description = html, 'title', 'scope'  # 'boilerplating(html)'
     html_ref = save_blob('articles/' + clean_url(page_url), html)
+    date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
     data = {
         'company_id': company['_id'],
         'url': page_url,
         'text': text,
         'title': title,
-        'scope': scope,
+        'description': description,
         'html_ref': html_ref,
         'date': date  #  datetime.datetime.now()
     }
@@ -74,11 +76,7 @@ def save_articles(company_url, page_url, html, date):
 
     # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
     #                                    upsert=True)
-    res = {}
-    res['content_id'] = str(article_id.upserted_id if article_id.upserted_id else '')
-    res['company_url'] = company['url']
-    res['company_id'] = str(company['_id'])
-    return res
+    return str(article_id.inserted_id)
 
   except Exception as e:
     logging.error(f'Error: {e}')

@@ -17,36 +17,24 @@ message ArticlesRequest {
 }
 
 message ArticlesResponse {
-  message JobPost {
+  message Article {
     string title = 1;
     string date = 2;
-    string link = 3;
-    string location = 4;
+    string url = 3;
+    string description = 4;
+    string text = 5;
   }
-  repeated JobPost posts = 1;
-  int32 total_posts = 2;
+  repeated Article articles = 1;
+  int32 total_articles = 2;
 }
 
 message AddArticlesRequest {
-  message JobPostEntry {
-    string title = 1;
-    string date = 2;
-    string link = 3;
-    string location = 4;
-    string website = 5;
-    string company = 6;
-    string city = 7;
-    string state = 8;
-    string country = 9;
-    string html = 10;
-    string overview_html = 11;
-    string overview_url = 12;
-    string job_list_html = 13;
-    string job_list_url = 14;
-  }
-  repeated JobPostEntry posts = 1;
+  string company_url = 1;
+  string date = 2;
+  string url = 3;
+  string html = 4;
 }
 
 message AddArticlesResponse {
-  int32 total_posts = 1;
+  string article_id = 1;
 }

@@ -15,7 +15,6 @@ grpcio = "*"
 grpcio-tools = "*"
 pymongo = "*"
 grpcio-reflection = "*"
-master = {git = "https://github.com/wearefair/protobuf-to-dict"}
 azure-storage-blob = "*"
 schematics = "*"
 

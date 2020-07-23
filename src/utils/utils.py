@@ -1,6 +1,6 @@
 import logging
 from azure.storage.blob import BlobServiceClient
-from utils.config import get_config
+from delphai_backend_utils.config import get_config
 
 
 def clean_url(url, keep_www=False):
