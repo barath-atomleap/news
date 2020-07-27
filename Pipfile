@@ -17,6 +17,8 @@ pymongo = "*"
 grpcio-reflection = "*"
 azure-storage-blob = "*"
 schematics = "*"
+trafilatura = "*"
+cleantext = "*"
 
 [requires]
 python_version = "3.6"

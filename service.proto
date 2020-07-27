@@ -1,11 +1,11 @@
-// Delphai articles [micro]service proto3 declaration
+// Delphai news articles [micro]service proto3 declaration
 
 syntax = "proto3";
 
-package delphai.articles_service;
+package delphai.news;
 
-service Articles {
-  // Retrieves articles of a company
+service News {
+  // Retrieves news about a company
   rpc get_articles(ArticlesRequest) returns (ArticlesResponse) {}
   rpc add_articles(AddArticlesRequest) returns (AddArticlesResponse) {}
 }
@@ -22,7 +22,8 @@ message ArticlesResponse {
     string date = 2;
     string url = 3;
     string description = 4;
-    string text = 5;
+    string content = 5;
+    repeated string mentions = 6;
   }
   repeated Article articles = 1;
   int32 total_articles = 2;

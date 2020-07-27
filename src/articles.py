@@ -3,18 +3,19 @@ import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
 from utils.utils import clean_url, save_blob
 import logging
+from news_processing import news_boilerplater
 
 db = get_own_db_connection()
-articles = db.articles
-articles.create_index('url', unique=True)
-articles.create_index('company_id')
+news = db.news
+news.create_index('url', unique=True)
+news.create_index('company_id')
 
 
 def articles_data(company_id, start_row, fetch_count):
 
   skip = (start_row - 1) * fetch_count
 
-  news_articles = articles.aggregate([{
+  news_articles = news.aggregate([{
       "$match": {
           "company_id": ObjectId(company_id)
       }
@@ -22,6 +23,7 @@ def articles_data(company_id, start_row, fetch_count):
       "$project": {
           "_id": 0,
           "description": 1,
+          "mentions": 1,
           "date": {
               '$dateToString': {
                   'format': '%Y-%m-%d',
@@ -56,23 +58,24 @@ def articles_data(company_id, start_row, fetch_count):
   return results
 
 
-def save_articles(company_url, page_url, html, date):
+def save_articles(company_url, page_url, html):
   try:
     company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1})
-    text, title, description = html, 'title', 'scope'  # 'boilerplating(html)'
-    html_ref = save_blob('articles/' + clean_url(page_url), html)
-    date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+    title, content, date = news_boilerplater(html=html)
+    description, mentions, company_name = 'description', ['mention'], 'Company'  # 'boilerplating(html)'
+    html_ref = save_blob('news/' + clean_url(page_url), html)
     data = {
         'company_id': company['_id'],
         'url': page_url,
-        'text': text,
+        'content': content,
         'title': title,
         'description': description,
+        'mentions': mentions,
         'html_ref': html_ref,
-        'date': date  #  datetime.datetime.now()
+        'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
     }
 
-    article_id = articles.insert_one(data)
+    article_id = news.insert_one(data)
 
     # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
     #                                    upsert=True)
