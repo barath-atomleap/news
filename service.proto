@@ -31,9 +31,8 @@ message ArticlesResponse {
 
 message AddArticlesRequest {
   string company_url = 1;
-  string date = 2;
-  string url = 3;
-  string html = 4;
+  string url = 2;
+  string html = 3;
 }
 
 message AddArticlesResponse {
