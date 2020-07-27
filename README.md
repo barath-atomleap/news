@@ -1,4 +1,4 @@
-# articles-service
+# news-service
 
-Micro service to save and retrieve articles.
-# articles-service
+Micro service to save and retrieve news articles.
+# news-service
