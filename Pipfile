@@ -19,6 +19,8 @@ azure-storage-blob = "*"
 schematics = "*"
 trafilatura = "*"
 cleantext = "*"
+pycld3 = "0.20"
+googletrans = "3.0.0"
 
 [requires]
 python_version = "3.6"
