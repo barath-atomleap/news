@@ -25,4 +25,5 @@ dependencies:
     - python-Levenshtein==0.12.0
     - pycld3==0.20
     - googletrans==3.0.0
+    - ktrain==0.18.5
     # - urltools

@@ -1,6 +1,9 @@
 import trafilatura
 from cleantext import clean
 import re
+import nltk
+from fuzzywuzzy import fuzz
+from ktrain import text
 
 
 def news_boilerplater(html: str):
@@ -33,9 +36,54 @@ def news_boilerplater(html: str):
     text = re.sub("\s+", " ", text)
     return text.strip()
 
-  page_content = trafilatura.extract(html)
-  page_metadata = trafilatura.metadata.extract_metadata(html)
-  article_publication_date = page_metadata.date
-  article_title = preprocess_text(str(page_metadata.title))
-  page_content = preprocess_text(str(page_content))
-  return article_title, page_content, article_publication_date
+    page_content = trafilatura.extract(html)
+    page_metadata = trafilatura.metadata.extract_metadata(html)
+    article_publication_date = page_metadata.date
+    article_title = preprocess_text(str(page_metadata.title))
+    page_content = preprocess_text(str(page_content))
+    return article_title, page_content, article_publication_date
+
+
+def get_company_info_from_article(company_name: str, content: str):
+  """
+    Checks if company with `company_name` appears in text `content`, using the fuzzy wuzzy package.
+    :param content: text in a news article (str)
+    :param company_name: company name (str)
+    :return: str: first sentence that the company name appears in
+    """
+  # if the given article mentions the given company
+  if fuzz.partial_token_set_ratio(company_name, content) > 90:
+    # return the first text snippet that contains company information
+    for sentence in nltk.sent_tokenize(content):
+      if fuzz.partial_token_set_ratio(company_name, sentence) > 90:
+        return sentence
+  else:
+    return None
+
+
+def get_product_info_from_article(content: str, keywords: list):
+  """
+    Given the text `content` of a news article, tokenizes it in sentences and computes the similarity of the text to
+    predefined keywords `keywords` that are related to product launches.
+    :param keywords: list of words related to company products (list of str)
+    :param content: article text (str)
+    :return: str: most relevant sentence
+    """
+
+  zeroshotclassifier = text.ZeroShotClassifier()  # unsupervised deep learning model for topic classification
+
+  relevant_sentences = []
+  # tokenize the article into sentences and find which sentences contain product information
+  for sentence in nltk.sent_tokenize(content):
+    prediction = zeroshotclassifier.predict(doc=sentence, topic_strings=keywords, include_labels=True)
+    score = prediction[0][-1]
+    if score > 0.90:
+      relevant_sentences.append([sentence, prediction])
+  # sort sentences based on their similarity score to product keywords
+  relevant_sentences = [x[0] for x in sorted(relevant_sentences, key=lambda x: x[1], reverse=True)]
+
+  if len(relevant_sentences) == 0:
+    return None
+  else:
+    # return the most relevant text snippet
+    return relevant_sentences[0]
