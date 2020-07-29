@@ -60,17 +60,18 @@ def articles_data(company_id, start_row, fetch_count):
 
 def save_articles(company_url, page_url, html):
   try:
-    company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1})
+    company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1, 'name': 1})
+    company_name = company.get('name')
     title, content, date = news_boilerplater(html=html)
     # translate text if necessary
     if not is_text_in_english(title):
       title = translate_to_english(title)
     if not is_text_in_english(content):
       content = translate_to_english(content)
-    logging.debug(f'title: {title}')
-    logging.debug(f'date: {date}')
+    # logging.debug(f'title: {title}')
+    # logging.debug(f'date: {date}')
     # get company information
-    news_snippet_about_company = get_company_info_from_article(company_name=company.get('name'), content=content)
+    news_snippet_about_company = get_company_info_from_article(company_name=company_name, content=content)
     # get product information
     product_keywords = ["product"]  # this list will be updated
     if news_snippet_about_company is not None:
@@ -79,14 +80,14 @@ def save_articles(company_url, page_url, html):
     else:
       news_snippet_about_products = None
 
-    html_ref = save_blob('news/' + clean_url(page_url), html)
+    html_ref = "save_blob('news/' + clean_url(page_url), html)"
     data = {
         'company_id': company['_id'],
         'url': page_url,
         'content': content,
         'title': title,
         'description': news_snippet_about_company,
-        'mentions': [company.get('name')],
+        'mentions': [company_name],
         'prod_desc': news_snippet_about_products,
         # 'prod_mentions': mentions,
         'html_ref': html_ref,
@@ -109,7 +110,10 @@ def products_data(company_id, start_row, fetch_count):
 
   news_articles = news.aggregate([{
       "$match": {
-          "company_id": ObjectId(company_id)
+          "company_id": ObjectId(company_id),
+          "prod_mentions": {
+              '$exists': 1
+          }
       }
   }, {
       "$project": {

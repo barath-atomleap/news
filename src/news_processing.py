@@ -36,12 +36,12 @@ def news_boilerplater(html: str):
     text = re.sub("\s+", " ", text)
     return text.strip()
 
-    page_content = trafilatura.extract(html)
-    page_metadata = trafilatura.metadata.extract_metadata(html)
-    article_publication_date = page_metadata.date
-    article_title = preprocess_text(str(page_metadata.title))
-    page_content = preprocess_text(str(page_content))
-    return article_title, page_content, article_publication_date
+  page_content = trafilatura.extract(html)
+  page_metadata = trafilatura.metadata.extract_metadata(html)
+  article_publication_date = page_metadata.date
+  article_title = preprocess_text(str(page_metadata.title))
+  page_content = preprocess_text(str(page_content))
+  return article_title, page_content, article_publication_date
 
 
 def get_company_info_from_article(company_name: str, content: str):
@@ -58,7 +58,7 @@ def get_company_info_from_article(company_name: str, content: str):
       if fuzz.partial_token_set_ratio(company_name, sentence) > 90:
         return sentence
   else:
-    return None
+    return ''
 
 
 def get_product_info_from_article(content: str, keywords: list):
