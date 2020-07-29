@@ -25,6 +25,7 @@ message ArticlesResponse {
     string description = 4;
     string content = 5;
     repeated string mentions = 6;
+    bool is_translated = 7;
   }
   repeated Article articles = 1;
   int32 total_articles = 2;

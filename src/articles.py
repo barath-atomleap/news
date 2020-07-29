@@ -24,6 +24,7 @@ def articles_data(company_id, start_row, fetch_count):
           "_id": 0,
           "description": 1,
           "mentions": 1,
+          "is_translated": 1,
           "date": {
               '$dateToString': {
                   'format': '%Y-%m-%d',
@@ -60,45 +61,52 @@ def articles_data(company_id, start_row, fetch_count):
 
 def save_articles(company_url, page_url, html):
   try:
+    is_translated = False
     company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1, 'name': 1})
     company_name = company.get('name')
     title, content, date = news_boilerplater(html=html)
-    # translate text if necessary
-    if not is_text_in_english(title):
-      title = translate_to_english(title)
-    if not is_text_in_english(content):
-      content = translate_to_english(content)
-    # logging.debug(f'title: {title}')
-    # logging.debug(f'date: {date}')
-    # get company information
-    news_snippet_about_company = get_company_info_from_article(company_name=company, content="{}. {}".format(title, content))
-    # get product information
-    product_keywords = ["product"]  # this list will be updated
-    if news_snippet_about_company is not None:
-      news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
-                                                                  keywords=product_keywords)
-    else:
-      news_snippet_about_products = None
+    if title is not None and content is not None and date is not None:
+      # translate text if necessary
+      if not is_text_in_english(title):
+        is_translated = True
+        title = translate_to_english(title)
+      if not is_text_in_english(content):
+        is_translated = True
+        content = translate_to_english(content)
+      # logging.debug(f'title: {title}')
+      # logging.debug(f'date: {date}')
+      # get company information
+      news_snippet_about_company = get_company_info_from_article(company_name=company,
+                                                                 content="{}. {}".format(title, content))
+      # get product information
+      product_keywords = ["product"]  # this list will be updated
+      if news_snippet_about_company is not None:
+        news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
+                                                                    keywords=product_keywords)
+      else:
+        news_snippet_about_products = None
 
-    html_ref = save_blob('news/' + clean_url(page_url), html)
-    data = {
-        'company_id': company['_id'],
-        'url': page_url,
-        'content': content,
-        'title': title,
-        'description': news_snippet_about_company,
-        'mentions': [company_name],
-        'prod_desc': news_snippet_about_products,
-        # 'prod_mentions': mentions,
-        'html_ref': html_ref,
-        'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
-    }
+      html_ref = save_blob('news/' + clean_url(page_url), html)
+      data = {
+          'company_id': company['_id'],
+          'url': page_url,
+          'content': content,
+          'title': title,
+          'description': news_snippet_about_company,
+          'mentions': [company_name],
+          'prod_desc': news_snippet_about_products,
+          # 'prod_mentions': mentions,
+          'html_ref': html_ref,
+          'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
+      }
+      if is_translated:
+        data['is_translated'] = is_translated
 
-    article_id = news.insert_one(data)
+      article_id = news.insert_one(data)
 
-    # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
-    #                                    upsert=True)
-    return str(article_id.inserted_id)
+      # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
+      #                                    upsert=True)
+      return str(article_id.inserted_id)
 
   except Exception as e:
     logging.error(f'Error: {e}')
@@ -120,6 +128,7 @@ def products_data(company_id, start_row, fetch_count):
           "_id": 0,
           "description": '$prod_desc',
           "mentions": '$prod_mentions',
+          "is_translated": 1,
           "date": {
               '$dateToString': {
                   'format': '%Y-%m-%d',
