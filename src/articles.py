@@ -80,7 +80,7 @@ def save_articles(company_url, page_url, html):
     else:
       news_snippet_about_products = None
 
-    html_ref = "save_blob('news/' + clean_url(page_url), html)"
+    html_ref = save_blob('news/' + clean_url(page_url), html)
     data = {
         'company_id': company['_id'],
         'url': page_url,
