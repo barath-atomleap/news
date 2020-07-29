@@ -67,8 +67,10 @@ def save_articles(company_url, page_url, html):
       title = translate_to_english(title)
     if not is_text_in_english(content):
       content = translate_to_english(content)
+    logging.debug(f'title: {title}')
+    logging.debug(f'date: {date}')
     # get company information
-    news_snippet_about_company = get_company_info_from_article(company_name=company, content=content)
+    news_snippet_about_company = get_company_info_from_article(company_name=company.get('name'), content=content)
     # get product information
     product_keywords = ["product"]  # this list will be updated
     if news_snippet_about_company is not None:
@@ -77,15 +79,16 @@ def save_articles(company_url, page_url, html):
     else:
       news_snippet_about_products = None
 
-    description, mentions = news_snippet_about_company, [news_snippet_about_products]  # 'boilerplating(html)'
     html_ref = save_blob('news/' + clean_url(page_url), html)
     data = {
         'company_id': company['_id'],
         'url': page_url,
         'content': content,
         'title': title,
-        'description': description,
-        'mentions': mentions,
+        'description': news_snippet_about_company,
+        'mentions': [company.get('name')],
+        'prod_desc': news_snippet_about_products,
+        # 'prod_mentions': mentions,
         'html_ref': html_ref,
         'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
     }
@@ -98,3 +101,50 @@ def save_articles(company_url, page_url, html):
 
   except Exception as e:
     logging.error(f'Error: {e}')
+
+
+def products_data(company_id, start_row, fetch_count):
+
+  skip = (start_row - 1) * fetch_count
+
+  news_articles = news.aggregate([{
+      "$match": {
+          "company_id": ObjectId(company_id)
+      }
+  }, {
+      "$project": {
+          "_id": 0,
+          "description": '$prod_desc',
+          "mentions": '$prod_mentions',
+          "date": {
+              '$dateToString': {
+                  'format': '%Y-%m-%d',
+                  'date': {
+                      '$toDate': '$date'
+                  }
+              }
+          },
+          "title": 1,
+          "url": 1
+      }
+  }, {
+      "$sort": {
+          "date": -1
+      }
+  }, {
+      "$facet": {
+          "total": [{
+              "$count": "count"
+          }],
+          "articles": [{
+              "$skip": skip
+          }, {
+              "$limit": int(fetch_count)
+          }]
+      }
+  }])
+
+  results = list(news_articles)[0]
+  results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
+
+  return results
