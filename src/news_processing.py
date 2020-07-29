@@ -37,12 +37,18 @@ def news_boilerplater(html: str):
         text = re.sub("\s+", " ", text)
         return text.strip()
 
-    page_content = trafilatura.extract(html)
-    page_metadata = trafilatura.metadata.extract_metadata(html)
-    article_publication_date = page_metadata.date
-    article_title = preprocess_text(str(page_metadata.title))
-    page_content = preprocess_text(str(page_content))
-    return article_title, page_content, article_publication_date
+    page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
+    if page_content is not None:
+        page_content = preprocess_text(str(page_content))
+        page_metadata = trafilatura.metadata.extract_metadata(html)
+        if page_metadata is not None:
+            article_publication_date = page_metadata.date
+            article_title = preprocess_text(str(page_metadata.title))
+            return article_title, page_content, article_publication_date
+        else:
+            return None, page_content, None
+    else:
+        return None, page_content, None
 
 
 def get_company_info_from_article(company_name: str, content: str):
