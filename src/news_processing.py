@@ -4,6 +4,7 @@ import re
 import nltk
 from fuzzywuzzy import fuzz
 from ktrain import text
+nltk.download('punkt')
 
 
 def news_boilerplater(html: str):
