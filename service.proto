@@ -8,6 +8,7 @@ service News {
   // Retrieves news about a company
   rpc get_articles(ArticlesRequest) returns (ArticlesResponse) {}
   rpc add_articles(AddArticlesRequest) returns (AddArticlesResponse) {}
+  rpc get_products(ArticlesRequest) returns (ArticlesResponse) {}
 }
 
 message ArticlesRequest {

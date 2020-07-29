@@ -7,7 +7,7 @@ from news_processing import news_boilerplater, get_company_info_from_article, ge
 
 db = get_own_db_connection()
 news = db.news
-news.create_index('url', unique=True)
+# news.create_index('url', unique=True)
 news.create_index('company_id')
 
 
@@ -60,32 +60,36 @@ def articles_data(company_id, start_row, fetch_count):
 
 def save_articles(company_url, page_url, html):
   try:
-    company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1})
+    company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1, 'name': 1})
+    company_name = company.get('name')
     title, content, date = news_boilerplater(html=html)
     # translate text if necessary
     if not is_text_in_english(title):
-        title = translate_to_english(title)
+      title = translate_to_english(title)
     if not is_text_in_english(content):
-        content = translate_to_english(content)
+      content = translate_to_english(content)
+    # logging.debug(f'title: {title}')
+    # logging.debug(f'date: {date}')
     # get company information
     news_snippet_about_company = get_company_info_from_article(company_name=company, content="{}. {}".format(title, content))
     # get product information
     product_keywords = ["product"]  # this list will be updated
     if news_snippet_about_company is not None:
-        news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
-                                                        keywords=product_keywords)
+      news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
+                                                                  keywords=product_keywords)
     else:
-        news_snippet_about_products = None
+      news_snippet_about_products = None
 
-    description, mentions, company_name = news_snippet_about_company, [news_snippet_about_products], company  # 'boilerplating(html)'
     html_ref = save_blob('news/' + clean_url(page_url), html)
     data = {
         'company_id': company['_id'],
         'url': page_url,
         'content': content,
         'title': title,
-        'description': description,
-        'mentions': mentions,
+        'description': news_snippet_about_company,
+        'mentions': [company_name],
+        'prod_desc': news_snippet_about_products,
+        # 'prod_mentions': mentions,
         'html_ref': html_ref,
         'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
     }
@@ -98,3 +102,53 @@ def save_articles(company_url, page_url, html):
 
   except Exception as e:
     logging.error(f'Error: {e}')
+
+
+def products_data(company_id, start_row, fetch_count):
+
+  skip = (start_row - 1) * fetch_count
+
+  news_articles = news.aggregate([{
+      "$match": {
+          "company_id": ObjectId(company_id),
+          "prod_mentions": {
+              '$exists': 1
+          }
+      }
+  }, {
+      "$project": {
+          "_id": 0,
+          "description": '$prod_desc',
+          "mentions": '$prod_mentions',
+          "date": {
+              '$dateToString': {
+                  'format': '%Y-%m-%d',
+                  'date': {
+                      '$toDate': '$date'
+                  }
+              }
+          },
+          "title": 1,
+          "url": 1
+      }
+  }, {
+      "$sort": {
+          "date": -1
+      }
+  }, {
+      "$facet": {
+          "total": [{
+              "$count": "count"
+          }],
+          "articles": [{
+              "$skip": skip
+          }, {
+              "$limit": int(fetch_count)
+          }]
+      }
+  }])
+
+  results = list(news_articles)[0]
+  results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
+
+  return results

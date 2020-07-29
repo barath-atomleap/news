@@ -7,7 +7,7 @@ from ktrain import text
 
 
 def news_boilerplater(html: str):
-    """
+  """
   Receives a web page from a news source with `html` contents.
   Returns the title, text content and publication date of this news entry.
   Args:
@@ -15,27 +15,26 @@ def news_boilerplater(html: str):
   Returns:
       title (str), content (str), publication_date (str)
   """
-
-    def preprocess_text(text: str):
-        """
+  def preprocess_text(text: str):
+    """
     Cleaning and processing text extracted from web page with trafilatura.
     :param text: input string with text
     :return: clean text
     """
 
-        text = text.strip()
-        try:
-            text = clean(text)
-        except Exception as e:
-            print("{}: Can't preprocess news article text with cleantext package. Keeping the original text.", str(e))
-            text = text
-        try:
-            text = text.encode('latin-1').decode('unicode_escape')
-        except Exception as e:
-            print("{}: Can't perform encoding and decoding on news article text. Keeping the original text.", str(e))
-            text = text
-        text = re.sub("\s+", " ", text)
-        return text.strip()
+    text = text.strip()
+    try:
+      text = clean(text)
+    except Exception as e:
+      print("{}: Can't preprocess news article text with cleantext package. Keeping the original text.", str(e))
+      text = text
+    try:
+      text = text.encode('latin-1').decode('unicode_escape')
+    except Exception as e:
+      print("{}: Can't perform encoding and decoding on news article text. Keeping the original text.", str(e))
+      text = text
+    text = re.sub("\s+", " ", text)
+    return text.strip()
 
     page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
     if page_content is not None:
@@ -51,8 +50,9 @@ def news_boilerplater(html: str):
         return None, page_content, None
 
 
+
 def get_company_info_from_article(company_name: str, content: str):
-    """
+  """
     Checks if company with `company_name` appears in text `content`, using the fuzzy wuzzy package.
     :param content: text in a news article (str)
     :param company_name: company name (str)
@@ -65,11 +65,11 @@ def get_company_info_from_article(company_name: str, content: str):
             if fuzz.token_set_ratio(company_name.lower(), sentence) > 98:
                 return sentence
     else:
-        return None
+        return ""
 
 
 def get_product_info_from_article(content: str, keywords: list):
-    """
+  """
     Given the text `content` of a news article, tokenizes it in sentences and computes the similarity of the text to
     predefined keywords `keywords` that are related to product launches.
     :param keywords: list of words related to company products (list of str)
@@ -93,8 +93,7 @@ def get_product_info_from_article(content: str, keywords: list):
     relevant_sentences = [x[0] for x in sorted(relevant_sentences, key=lambda x: x[1], reverse=True)]
 
     if len(relevant_sentences) == 0:
-        return None
+      return None
     else:
-        # return the most relevant text snippet
-        return relevant_sentences[0]
-
+      # return the most relevant text snippet
+      return relevant_sentences[0]

@@ -4,7 +4,7 @@ import grpc
 from grpc_reflection.v1alpha import reflection
 from concurrent import futures
 from delphai_backend_utils import logging
-from articles import articles_data, save_articles
+from articles import articles_data, save_articles, products_data
 
 
 class News(service_pb2_grpc.News):
@@ -21,6 +21,13 @@ class News(service_pb2_grpc.News):
     html = request.html
     article = save_articles(company_url, page_url, html)
     return service_pb2.AddArticlesResponse(article_id=article)
+
+  def get_products(self, request, context):
+    company_id = request.company_id
+    start_row = request.start_row
+    fetch_count = request.fetch_count
+    articles = products_data(company_id, start_row, fetch_count)
+    return service_pb2.ArticlesResponse(articles=articles.get('articles', []), total_articles=articles.get('total', 0))
 
 
 def serve():
