@@ -62,42 +62,39 @@ def save_articles(company_url, page_url, html):
   try:
     company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1})
     title, content, date = news_boilerplater(html=html)
-    if title is not None and content is not None and date is not None:
-        # translate text if necessary
-        if not is_text_in_english(title):
-            title = translate_to_english(title)
-        if not is_text_in_english(content):
-            content = translate_to_english(content)
-        # get company information
-        news_snippet_about_company = get_company_info_from_article(company_name=company, content="{}. {}".format(title, content))
-        # get product information
-        product_keywords = ["product"]  # this list will be updated
-        if news_snippet_about_company is not None:
-            news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
-                                                            keywords=product_keywords)
-        else:
-            news_snippet_about_products = None
-
-        description, mentions, company_name = news_snippet_about_company, [news_snippet_about_products], company  # 'boilerplating(html)'
-        html_ref = save_blob('news/' + clean_url(page_url), html)
-        data = {
-            'company_id': company['_id'],
-            'url': page_url,
-            'content': content,
-            'title': title,
-            'description': description,
-            'mentions': mentions,
-            'html_ref': html_ref,
-            'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
-        }
-
-        article_id = news.insert_one(data)
-
-        # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
-        #                                    upsert=True)
-        return str(article_id.inserted_id)
+    # translate text if necessary
+    if not is_text_in_english(title):
+        title = translate_to_english(title)
+    if not is_text_in_english(content):
+        content = translate_to_english(content)
+    # get company information
+    news_snippet_about_company = get_company_info_from_article(company_name=company, content="{}. {}".format(title, content))
+    # get product information
+    product_keywords = ["product"]  # this list will be updated
+    if news_snippet_about_company is not None:
+        news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
+                                                        keywords=product_keywords)
     else:
-        return None
+        news_snippet_about_products = None
+
+    description, mentions, company_name = news_snippet_about_company, [news_snippet_about_products], company  # 'boilerplating(html)'
+    html_ref = save_blob('news/' + clean_url(page_url), html)
+    data = {
+        'company_id': company['_id'],
+        'url': page_url,
+        'content': content,
+        'title': title,
+        'description': description,
+        'mentions': mentions,
+        'html_ref': html_ref,
+        'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
+    }
+
+    article_id = news.insert_one(data)
+
+    # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
+    #                                    upsert=True)
+    return str(article_id.inserted_id)
 
   except Exception as e:
     logging.error(f'Error: {e}')
