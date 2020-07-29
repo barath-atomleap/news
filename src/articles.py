@@ -78,35 +78,37 @@ def save_articles(company_url, page_url, html):
       # get company information
       news_snippet_about_company = get_company_info_from_article(company_name=company,
                                                                  content="{}. {}".format(title, content))
-      # get product information
-      product_keywords = ["product"]  # this list will be updated
-      if news_snippet_about_company is not None:
-        news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
-                                                                    keywords=product_keywords)
-      else:
-        news_snippet_about_products = None
 
-      html_ref = save_blob('news/' + clean_url(page_url), html)
-      data = {
-          'company_id': company['_id'],
-          'url': page_url,
-          'content': content,
-          'title': title,
-          'description': news_snippet_about_company,
-          'mentions': [company_name],
-          'prod_desc': news_snippet_about_products,
-          # 'prod_mentions': mentions,
-          'html_ref': html_ref,
-          'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
-      }
-      if is_translated:
-        data['is_translated'] = is_translated
+      if news_snippet_about_company:
+        # get product information
+        product_keywords = ["product"]  # this list will be updated
+        if news_snippet_about_company is not None:
+          news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
+                                                                      keywords=product_keywords)
+        else:
+          news_snippet_about_products = None
 
-      article_id = news.insert_one(data)
+        html_ref = save_blob('news/' + clean_url(page_url), html)
+        data = {
+            'company_id': company['_id'],
+            'url': page_url,
+            'content': content,
+            'title': title,
+            'description': news_snippet_about_company,
+            'mentions': [company_name],
+            'prod_desc': news_snippet_about_products,
+            # 'prod_mentions': mentions,
+            'html_ref': html_ref,
+            'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
+        }
+        if is_translated:
+          data['is_translated'] = is_translated
 
-      # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
-      #                                    upsert=True)
-      return str(article_id.inserted_id)
+        article_id = news.insert_one(data)
+
+        # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
+        #                                    upsert=True)
+        return str(article_id.inserted_id)
 
   except Exception as e:
     logging.error(f'Error: {e}')
