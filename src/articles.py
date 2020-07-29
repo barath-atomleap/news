@@ -7,7 +7,7 @@ from news_processing import news_boilerplater, get_company_info_from_article, ge
 
 db = get_own_db_connection()
 news = db.news
-news.create_index('url', unique=True)
+# news.create_index('url', unique=True)
 news.create_index('company_id')
 
 
