@@ -59,10 +59,10 @@ def get_company_info_from_article(company_name: str, content: str):
     :return: str: first sentence that the company name appears in
     """
     # if the given article mentions the given company
-    if fuzz.partial_token_set_ratio(company_name, content) > 90:
+    if fuzz.token_set_ratio(company_name.lower(), content) > 98:
         # return the first text snippet that contains company information
         for sentence in nltk.sent_tokenize(content):
-            if fuzz.partial_token_set_ratio(company_name, sentence) > 90:
+            if fuzz.token_set_ratio(company_name.lower(), sentence) > 98:
                 return sentence
     else:
         return None
