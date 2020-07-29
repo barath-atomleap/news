@@ -69,7 +69,7 @@ def save_articles(company_url, page_url, html):
         if not is_text_in_english(content):
             content = translate_to_english(content)
         # get company information
-        news_snippet_about_company = get_company_info_from_article(company_name=company, content=content)
+        news_snippet_about_company = get_company_info_from_article(company_name=company, content="{}. {}".format(title, content))
         # get product information
         product_keywords = ["product"]  # this list will be updated
         if news_snippet_about_company is not None:
