@@ -82,10 +82,13 @@ def get_product_info_from_article(content: str, keywords: list):
     relevant_sentences = []
     # tokenize the article into sentences and find which sentences contain product information
     for sentence in nltk.sent_tokenize(content):
-        prediction = zeroshotclassifier.predict(doc=sentence, topic_strings=keywords, include_labels=True)
-        score = prediction[0][-1]
-        if score > 0.90:
-            relevant_sentences.append([sentence, prediction])
+        try:
+            prediction = zeroshotclassifier.predict(doc=sentence, topic_strings=keywords, include_labels=True)
+            score = prediction[0][-1]
+            if score > 0.90:
+                relevant_sentences.append([sentence, prediction])
+        except RuntimeError as e:
+            print("CUDA error in zeroshotclassifier for product information extraction: {}".format(e))
     # sort sentences based on their similarity score to product keywords
     relevant_sentences = [x[0] for x in sorted(relevant_sentences, key=lambda x: x[1], reverse=True)]
 
