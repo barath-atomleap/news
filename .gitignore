@@ -13,3 +13,5 @@ config/development.yml
 
 service_pb2*
 requirements.txt
+
+.idea

@@ -37,12 +37,19 @@ def news_boilerplater(html: str):
     text = re.sub("\s+", " ", text)
     return text.strip()
 
-  page_content = trafilatura.extract(html)
-  page_metadata = trafilatura.metadata.extract_metadata(html)
-  article_publication_date = page_metadata.date
-  article_title = preprocess_text(str(page_metadata.title))
-  page_content = preprocess_text(str(page_content))
-  return article_title, page_content, article_publication_date
+    page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
+    if page_content is not None:
+        page_content = preprocess_text(str(page_content))
+        page_metadata = trafilatura.metadata.extract_metadata(html)
+        if page_metadata is not None:
+            article_publication_date = page_metadata.date
+            article_title = preprocess_text(str(page_metadata.title))
+            return article_title, page_content, article_publication_date
+        else:
+            return None, page_content, None
+    else:
+        return None, page_content, None
+
 
 
 def get_company_info_from_article(company_name: str, content: str):
@@ -52,14 +59,14 @@ def get_company_info_from_article(company_name: str, content: str):
     :param company_name: company name (str)
     :return: str: first sentence that the company name appears in
     """
-  # if the given article mentions the given company
-  if fuzz.partial_token_set_ratio(company_name, content) > 90:
-    # return the first text snippet that contains company information
-    for sentence in nltk.sent_tokenize(content):
-      if fuzz.partial_token_set_ratio(company_name, sentence) > 90:
-        return sentence
-  else:
-    return ''
+    # if the given article mentions the given company
+    if fuzz.token_set_ratio(company_name.lower(), content) > 98:
+        # return the first text snippet that contains company information
+        for sentence in nltk.sent_tokenize(content):
+            if fuzz.token_set_ratio(company_name.lower(), sentence) > 98:
+                return sentence
+    else:
+        return ""
 
 
 def get_product_info_from_article(content: str, keywords: list):
@@ -71,20 +78,23 @@ def get_product_info_from_article(content: str, keywords: list):
     :return: str: most relevant sentence
     """
 
-  zeroshotclassifier = text.ZeroShotClassifier()  # unsupervised deep learning model for topic classification
+    zeroshotclassifier = text.ZeroShotClassifier()  # unsupervised deep learning model for topic classification
 
-  relevant_sentences = []
-  # tokenize the article into sentences and find which sentences contain product information
-  for sentence in nltk.sent_tokenize(content):
-    prediction = zeroshotclassifier.predict(doc=sentence, topic_strings=keywords, include_labels=True)
-    score = prediction[0][-1]
-    if score > 0.90:
-      relevant_sentences.append([sentence, prediction])
-  # sort sentences based on their similarity score to product keywords
-  relevant_sentences = [x[0] for x in sorted(relevant_sentences, key=lambda x: x[1], reverse=True)]
+    relevant_sentences = []
+    # tokenize the article into sentences and find which sentences contain product information
+    for sentence in nltk.sent_tokenize(content):
+        try:
+            prediction = zeroshotclassifier.predict(doc=sentence, topic_strings=keywords, include_labels=True)
+            score = prediction[0][-1]
+            if score > 0.90:
+                relevant_sentences.append([sentence, prediction])
+        except RuntimeError as e:
+            print("CUDA error in zeroshotclassifier for product information extraction: {}".format(e))
+    # sort sentences based on their similarity score to product keywords
+    relevant_sentences = [x[0] for x in sorted(relevant_sentences, key=lambda x: x[1], reverse=True)]
 
-  if len(relevant_sentences) == 0:
-    return None
-  else:
-    # return the most relevant text snippet
-    return relevant_sentences[0]
+    if len(relevant_sentences) == 0:
+      return None
+    else:
+      # return the most relevant text snippet
+      return relevant_sentences[0]
