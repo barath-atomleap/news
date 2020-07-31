@@ -121,7 +121,7 @@ def products_data(company_id, start_row, fetch_count):
   news_articles = news.aggregate([{
       "$match": {
           "company_id": ObjectId(company_id),
-          "prod_mentions": {
+          "prod_desc": {
               '$exists': 1
           }
       }
