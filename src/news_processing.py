@@ -29,11 +29,6 @@ def news_boilerplater(html: str):
     except Exception as e:
       print("{}: Can't preprocess news article text with cleantext package. Keeping the original text.", str(e))
       text = text
-    try:
-      text = text.encode('latin-1').decode('unicode_escape')
-    except Exception as e:
-      print("{}: Can't perform encoding and decoding on news article text. Keeping the original text.", str(e))
-      text = text
     text = re.sub("\s+", " ", text)
     return text.strip()
 
