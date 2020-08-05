@@ -79,7 +79,7 @@ def save_articles(company_url, page_url, html):
       # logging.debug(f'title: {title}')
       # logging.debug(f'date: {date}')
       # get company information
-      news_snippet_about_company = get_company_info_from_article(company_name=company,
+      news_snippet_about_company = get_company_info_from_article(company_name=company_name,
                                                                  content="{}. {}".format(title, content))
 
       if news_snippet_about_company:
