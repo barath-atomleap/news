@@ -1,10 +1,12 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0f6ce193d99dc6237ed95582bd60fe69917091b426c8222fc098f60e088d2acc"
+            "sha256": "eb9898ac28f1db4094a35033c135e9a7e3d5cf9f2b222dfc4bd50a78d658cef4"
         },
         "pipfile-spec": 6,
-        "requires": {},
+        "requires": {
+            "python_version": "3.6"
+        },
         "sources": [
             {
                 "name": "pypi",
@@ -766,10 +768,10 @@
         },
         "ktrain": {
             "hashes": [
-                "sha256:f478652a39d9c57f69bbfd5b6efd8caba28b3a88c7c911e2673ebeb81491747a"
+                "sha256:1f716a2bc15a3fe5018751363e16cbe7630bc33da3ba7265d8a2efefd77d03df"
             ],
             "index": "pypi",
-            "version": "==0.19.2"
+            "version": "==0.19.3"
         },
         "kubernetes": {
             "hashes": [
