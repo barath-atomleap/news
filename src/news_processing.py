@@ -29,7 +29,7 @@ def news_boilerplater(html: str):
     except Exception as e:
       print("{}: Can't preprocess news article text with cleantext package. Keeping the original text.", str(e))
       text = text
-    text = re.sub("\s+", " ", text)
+    text = re.sub(pattern="\s+", repl=" ", string=text)
     return text.strip()
 
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
