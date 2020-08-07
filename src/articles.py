@@ -71,11 +71,10 @@ def save_articles(company_url, page_url, html):
     if title is not None and content is not None and date is not None:
       # translate text if necessary
       if not is_text_in_english(title):
-        is_translated = True
         title = translate_to_english(title)
       if not is_text_in_english(content):
-        is_translated = True
         content = translate_to_english(content)
+        is_translated = True
       # logging.debug(f'title: {title}')
       # logging.debug(f'date: {date}')
       # get company information
