@@ -3,7 +3,7 @@ import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
 from utils.utils import clean_url, save_blob, is_text_in_english, translate_to_english
 import logging
-from news_processing import news_boilerplater, get_company_info_from_article, get_product_info_from_article
+from news_processing import news_boilerplater, get_company_info_from_article
 
 db = get_own_db_connection()
 news = db.news
@@ -64,6 +64,9 @@ def save_articles(company_url, page_url, html):
     is_translated = False
     company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1, 'name': 1})
     company_name = company.get('name')
+    if type(company_name) is not str:
+      logging.error(f'Error: Company "{company_name}" is not a string in the DB and cannot be processed by fuzzywuzzy')
+      raise ValueError(f"Company '{company_name}' is not a string in the DB and cannot be processed by fuzzywuzzy")
     title, content, date = news_boilerplater(html=html)
     if title is not None and content is not None and date is not None:
       # translate text if necessary
@@ -80,26 +83,17 @@ def save_articles(company_url, page_url, html):
                                                                  content="{}. {}".format(title, content))
 
       if news_snippet_about_company:
-        # get product information
-        product_keywords = ["product"]  # this list will be updated
-        if news_snippet_about_company is not None:
-          news_snippet_about_products = get_product_info_from_article(content="{}. {}".format(title, content),
-                                                                      keywords=product_keywords)
-        else:
-          news_snippet_about_products = None
-
-        html_ref = save_blob('news/' + clean_url(page_url), html)
+        html_ref = save_blob('news/html/' + clean_url(page_url), html)
+        content_ref = save_blob('news/content/' + clean_url(page_url), content)
         data = {
             'company_id': company['_id'],
             'url': page_url,
-            'content': content,
+            'content_ref': content_ref,
             'title': title,
             'description': news_snippet_about_company,
             'mentions': [company_name],
-            'prod_desc': news_snippet_about_products,
-            # 'prod_mentions': mentions,
             'html_ref': html_ref,
-            'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')  #  datetime.datetime.now()
+            'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
         }
         if is_translated:
           data['is_translated'] = is_translated
