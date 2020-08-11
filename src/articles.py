@@ -64,6 +64,9 @@ def save_articles(company_url, page_url, html):
     is_translated = False
     company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1, 'name': 1})
     company_name = company.get('name')
+    if type(company_name) is not str:
+      logging.error(f'Error: Company "{company_name}" is not a string in the DB and cannot be processed by fuzzywuzzy')
+      raise ValueError(f"Company '{company_name}' is not a string in the DB and cannot be processed by fuzzywuzzy")
     title, content, date = news_boilerplater(html=html)
     if title is not None and content is not None and date is not None:
       # translate text if necessary
