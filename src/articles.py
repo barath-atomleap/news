@@ -66,7 +66,7 @@ def save_articles(companies: list, page_url: str, html: str):
   appear in its news tab. Old implementation: If there is at least one mentioned company, then we also detect
   sentences in the text that discuss products and return the most relevant sentence.
   Args:
-      companies: list of dictionaries with (company_id, company_url, company_name)
+      companies: list of dictionaries with (_id, name, url) for each company
       page_url: url of the article
       html: html content of the article
   Returns: article ids in DB
@@ -89,7 +89,7 @@ def save_articles(companies: list, page_url: str, html: str):
       article_id_list = list()  # all article company pairs
       # try to fill the news tabs of the companies in our DB with this new article
       for company in companies:
-        news_snippet_about_company = get_company_info_from_article(company_name=company["company_name"],
+        news_snippet_about_company = get_company_info_from_article(company_name=company["name"],
                                                                  content="{}. {}".format(title, content))
         if news_snippet_about_company != "":
           company_article_match_found = True
@@ -99,7 +99,7 @@ def save_articles(companies: list, page_url: str, html: str):
               'content_ref': content_ref,
               'title': title,
               'description': news_snippet_about_company,
-              'mentions': [company["company_name"]],
+              'mentions': [company["name"]],
               'html_ref': html_ref,
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
           }
