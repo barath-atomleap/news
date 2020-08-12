@@ -3,7 +3,6 @@ from cleantext import clean
 import re
 import nltk
 from fuzzywuzzy import fuzz
-from ktrain import text
 nltk.download('punkt')
 
 
@@ -61,34 +60,3 @@ def get_company_info_from_article(company_name: str, content: str):
         return sentence
   else:
     return ""
-
-
-def get_product_info_from_article(content: str, keywords: list):
-  """
-  Given the text `content` of a news article, tokenizes it in sentences and computes the similarity of the text to
-  predefined keywords `keywords` that are related to product launches.
-  :param keywords: list of words related to company products (list of str)
-  :param content: article text (str)
-  :return: str: most relevant sentence
-  """
-
-  zeroshotclassifier = text.ZeroShotClassifier()  # unsupervised deep learning model for topic classification
-
-  relevant_sentences = []
-  # tokenize the article into sentences and find which sentences contain product information
-  for sentence in nltk.sent_tokenize(content):
-    try:
-      prediction = zeroshotclassifier.predict(doc=sentence, topic_strings=keywords, include_labels=True)
-      score = prediction[0][-1]
-      if score > 0.90:
-        relevant_sentences.append([sentence, prediction])
-    except RuntimeError as e:
-      print("CUDA error in zeroshotclassifier for product information extraction: {}".format(e))
-  # sort sentences based on their similarity score to product keywords
-  relevant_sentences = [x[0] for x in sorted(relevant_sentences, key=lambda x: x[1], reverse=True)]
-
-  if len(relevant_sentences) == 0:
-    return None
-  else:
-    # return the most relevant text snippet
-    return relevant_sentences[0]

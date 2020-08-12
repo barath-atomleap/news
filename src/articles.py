@@ -3,7 +3,7 @@ import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
 from utils.utils import clean_url, save_blob, is_text_in_english, translate_to_english
 import logging
-from news_processing import news_boilerplater, get_company_info_from_article, get_product_info_from_article
+from news_processing import news_boilerplater, get_company_info_from_article
 
 db = get_own_db_connection()
 news = db.news
@@ -74,34 +74,33 @@ def save_articles(companies: list, page_url: str, html: str):
   try:
     # boilerplate and save article in file
     title, content, date = news_boilerplater(html=html)
-    html_ref = save_blob('news/' + clean_url(page_url), html)
+    html_ref = save_blob('news/html/' + clean_url(page_url), html)
+    content_ref = save_blob('news/content/' + clean_url(page_url), content)
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
       is_translated = False
       # translate text if necessary
       if not is_text_in_english(title):
-        is_translated = True
         title = translate_to_english(title)
       if not is_text_in_english(content):
-        is_translated = True
         content = translate_to_english(content)
       company_article_match_found = False  # at least one match
       article_id_list = list()  # all article company pairs
-      # try to fill the news tabs of the companies in our DB
+      # try to fill the news tabs of the companies in our DB with this new article
       for company in companies:
         news_snippet_about_company = get_company_info_from_article(company_name=company["company_name"],
                                                                  content="{}. {}".format(title, content))
         if news_snippet_about_company != "":
           company_article_match_found = True
           data = {
-            'company_id': company['company_id'],
-            'url': page_url,
-            'content': content,
-            'title': title,
-            'description': news_snippet_about_company,
-            'mentions': [company["company_name"]],
-            'html_ref': html_ref,
-            'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
+              'company_id': company['_id'],
+              'url': page_url,
+              'content_ref': content_ref,
+              'title': title,
+              'description': news_snippet_about_company,
+              'mentions': [company["company_name"]],
+              'html_ref': html_ref,
+              'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
           }
           if is_translated:
               data['is_translated'] = is_translated
@@ -111,7 +110,7 @@ def save_articles(companies: list, page_url: str, html: str):
         # add article without company information for now - new companies in our DB might match in the future
         data = {
             'url': page_url,
-            'content': content,
+            'content_ref': content_ref,
             'title': title,
             'html_ref': html_ref,
             'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
