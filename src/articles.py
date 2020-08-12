@@ -59,49 +59,73 @@ def articles_data(company_id, start_row, fetch_count):
   return results
 
 
-def save_articles(company_url, page_url, html):
+def save_articles(companies: list, page_url: str, html: str):
+  """
+  Receives a page from a news source, its html content and adds this news article to our DB.
+  If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
+  appear in its news tab. Old implementation: If there is at least one mentioned company, then we also detect
+  sentences in the text that discuss products and return the most relevant sentence.
+  Args:
+      companies: list of dictionaries with (_id, name, url) for each company
+      page_url: url of the article
+      html: html content of the article
+  Returns: article ids in DB
+  """
   try:
-    is_translated = False
-    company = db.companies.find_one({'url': clean_url(company_url)}, {'url': 1, 'name': 1})
-    company_name = company.get('name')
-    if type(company_name) is not str:
-      logging.error(f'Error: Company "{company_name}" is not a string in the DB and cannot be processed by fuzzywuzzy')
-      raise ValueError(f"Company '{company_name}' is not a string in the DB and cannot be processed by fuzzywuzzy")
+    # boilerplate and save article in file
     title, content, date = news_boilerplater(html=html)
+    html_ref = save_blob('news/html/' + clean_url(page_url), html)
+    content_ref = save_blob('news/content/' + clean_url(page_url), content)
+    # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
+      is_translated = False
       # translate text if necessary
       if not is_text_in_english(title):
         title = translate_to_english(title)
       if not is_text_in_english(content):
         content = translate_to_english(content)
         is_translated = True
-      # logging.debug(f'title: {title}')
-      # logging.debug(f'date: {date}')
-      # get company information
-      news_snippet_about_company = get_company_info_from_article(company_name=company_name,
+      company_article_match_found = False  # at least one match
+      article_id_list = list()  # all article company pairs
+      # try to fill the news tabs of the companies in our DB with this new article
+      for company in companies:
+        news_snippet_about_company = get_company_info_from_article(company_name=company["name"],
                                                                  content="{}. {}".format(title, content))
-
-      if news_snippet_about_company:
-        html_ref = save_blob('news/html/' + clean_url(page_url), html)
-        content_ref = save_blob('news/content/' + clean_url(page_url), content)
+        if news_snippet_about_company != "":
+          company_article_match_found = True
+          data = {
+              'company_id': company['_id'],
+              'url': page_url,
+              'content_ref': content_ref,
+              'title': title,
+              'description': news_snippet_about_company,
+              'mentions': [company["name"]],
+              'html_ref': html_ref,
+              'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
+          }
+          if is_translated:
+              data['is_translated'] = is_translated
+          article_id = news.insert_one(data)
+          article_id_list.append(article_id)
+      if company_article_match_found is False:
+        # add article without company information for now - new companies in our DB might match in the future
         data = {
-            'company_id': company['_id'],
             'url': page_url,
             'content_ref': content_ref,
             'title': title,
-            'description': news_snippet_about_company,
-            'mentions': [company_name],
             'html_ref': html_ref,
             'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
         }
         if is_translated:
-          data['is_translated'] = is_translated
-
+            data['is_translated'] = is_translated
         article_id = news.insert_one(data)
-
         # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
         #                                    upsert=True)
         return str(article_id.inserted_id)
+      else:
+        return [str(article_id.inserted_id) for article_id in article_id_list]
+    else:
+      return None
 
   except Exception as e:
     logging.error(f'Error: {e}')
