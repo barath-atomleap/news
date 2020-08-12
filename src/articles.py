@@ -84,6 +84,7 @@ def save_articles(companies: list, page_url: str, html: str):
         title = translate_to_english(title)
       if not is_text_in_english(content):
         content = translate_to_english(content)
+        is_translated = True
       company_article_match_found = False  # at least one match
       article_id_list = list()  # all article company pairs
       # try to fill the news tabs of the companies in our DB with this new article
