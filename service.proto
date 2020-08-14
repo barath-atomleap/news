@@ -35,8 +35,11 @@ message AddArticlesRequest {
   string company_url = 1;
   string url = 2;
   string html = 3;
+  bool test_mode = 4;
 }
 
 message AddArticlesResponse {
-  string article_id = 1;
+  repeated string article_ids = 1;
+  string title = 2;
+  string content = 3;
 }

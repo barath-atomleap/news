@@ -19,8 +19,11 @@ class News(service_pb2_grpc.News):
     company_url = request.company_url
     page_url = request.url
     html = request.html
-    article = save_articles(company_url, page_url, html)
-    return service_pb2.AddArticlesResponse(article_id=article)
+    test_mode = request.test_mode
+    article = save_articles(company_url, page_url, html, test_mode)
+    return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
+                                           title=article.get('title', ''),
+                                           content=article.get('content', ''))
 
   def get_products(self, request, context):
     company_id = request.company_id

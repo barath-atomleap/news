@@ -1,3 +1,4 @@
+import base64
 from bson import ObjectId
 import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
@@ -59,7 +60,7 @@ def articles_data(company_id, start_row, fetch_count):
   return results
 
 
-def save_articles(companies: list, page_url: str, html: str):
+def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -69,13 +70,20 @@ def save_articles(companies: list, page_url: str, html: str):
       companies: list of dictionaries with (_id, name, url) for each company
       page_url: url of the article
       html: html content of the article
+      test_mode: return results instead of saving
   Returns: article ids in DB
   """
   try:
+    html = base64.b64decode(html).decode('utf-8')
+    # print(html)
     # boilerplate and save article in file
     title, content, date = news_boilerplater(html=html)
-    html_ref = save_blob('news/html/' + clean_url(page_url), html)
-    content_ref = save_blob('news/content/' + clean_url(page_url), content)
+    # print(test_mode)
+    if test_mode:
+      return {'title': title, 'content': content}
+    else:
+      html_ref = save_blob('news/html/' + clean_url(page_url), html)
+      content_ref = save_blob('news/content/' + clean_url(page_url), content)
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
       is_translated = False
@@ -90,7 +98,7 @@ def save_articles(companies: list, page_url: str, html: str):
       # try to fill the news tabs of the companies in our DB with this new article
       for company in companies:
         news_snippet_about_company = get_company_info_from_article(company_name=company["name"],
-                                                                 content="{}. {}".format(title, content))
+                                                                   content="{}. {}".format(title, content))
         if news_snippet_about_company != "":
           company_article_match_found = True
           data = {
@@ -104,7 +112,7 @@ def save_articles(companies: list, page_url: str, html: str):
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
           }
           if is_translated:
-              data['is_translated'] = is_translated
+            data['is_translated'] = is_translated
           article_id = news.insert_one(data)
           article_id_list.append(article_id)
       if company_article_match_found is False:
@@ -117,18 +125,20 @@ def save_articles(companies: list, page_url: str, html: str):
             'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
         }
         if is_translated:
-            data['is_translated'] = is_translated
+          data['is_translated'] = is_translated
         article_id = news.insert_one(data)
         # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
         #                                    upsert=True)
-        return str(article_id.inserted_id)
+        article_ids = [str(article_id.inserted_id)]
       else:
-        return [str(article_id.inserted_id) for article_id in article_id_list]
+        article_ids = [str(article_id.inserted_id) for article_id in article_id_list]
+      return {'article_ids': article_ids, 'title': title, 'content': content}
     else:
-      return None
+      return {}
 
   except Exception as e:
     logging.error(f'Error: {e}')
+    return {}
 
 
 def products_data(company_id, start_row, fetch_count):
