@@ -78,6 +78,9 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
     # print(html)
     # boilerplate and save article in file
     title, content, date = news_boilerplater(html=html)
+    logging.info(f'test_mode: {test_mode}')
+    logging.info(f'title: {title}')
+    logging.info(f'content: {content}')
     # print(test_mode)
     if test_mode:
       return {'title': title, 'content': content}
