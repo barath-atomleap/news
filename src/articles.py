@@ -7,9 +7,9 @@ import logging
 from news_processing import news_boilerplater, get_company_info_from_article
 
 db = get_own_db_connection()
-news = db.news
-# news.create_index('url', unique=True)
-news.create_index('company_id')
+news = db.news_2
+news.create_index('url')
+news.create_index([('company_id', 1), ('url', 1)], unique=True)
 
 
 def articles_data(company_id, start_row, fetch_count):
