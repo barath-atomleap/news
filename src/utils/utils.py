@@ -6,16 +6,6 @@ from delphai_backend_utils.config import get_config
 from googletrans import Translator
 
 
-def clean_url(url, keep_www=False):
-  url = url.strip()
-  url = url.replace('https://', '').replace('http://', '').rstrip('/')
-  if not keep_www:
-    url = url.replace('www.', '')
-  split_url = url.split('/')
-  split_url[0] = split_url[0].lower()
-  return '/'.join(split_url)
-
-
 def save_blob(url, text):
   try:
     blob_storage = get_config('blob_storage')

@@ -2,7 +2,8 @@ import base64
 from bson import ObjectId
 import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
-from utils.utils import clean_url, save_blob, is_text_in_english, translate_to_english
+from delphai_backend_utils.formatting import clean_url
+from utils.utils import save_blob, is_text_in_english, translate_to_english
 import logging
 from news_processing import news_boilerplater, get_company_info_from_article
 
@@ -13,51 +14,55 @@ news.create_index([('company_id', 1), ('url', 1)], unique=True)
 
 
 def articles_data(company_id, start_row, fetch_count):
+  try:
+    logging.info(f'Retrieving articles for {company_id} page {start_row}')
+    skip = (start_row - 1) * fetch_count
 
-  skip = (start_row - 1) * fetch_count
+    news_articles = news.aggregate([{
+        "$match": {
+            "company_id": ObjectId(company_id)
+        }
+    }, {
+        "$project": {
+            "_id": 0,
+            "description": 1,
+            "mentions": 1,
+            "is_translated": 1,
+            "date": {
+                '$dateToString': {
+                    'format': '%Y-%m-%d',
+                    'date': {
+                        '$toDate': '$date'
+                    }
+                }
+            },
+            "title": 1,
+            "url": 1
+        }
+    }, {
+        "$sort": {
+            "date": -1
+        }
+    }, {
+        "$facet": {
+            "total": [{
+                "$count": "count"
+            }],
+            "articles": [{
+                "$skip": skip
+            }, {
+                "$limit": int(fetch_count)
+            }]
+        }
+    }])
 
-  news_articles = news.aggregate([{
-      "$match": {
-          "company_id": ObjectId(company_id)
-      }
-  }, {
-      "$project": {
-          "_id": 0,
-          "description": 1,
-          "mentions": 1,
-          "is_translated": 1,
-          "date": {
-              '$dateToString': {
-                  'format': '%Y-%m-%d',
-                  'date': {
-                      '$toDate': '$date'
-                  }
-              }
-          },
-          "title": 1,
-          "url": 1
-      }
-  }, {
-      "$sort": {
-          "date": -1
-      }
-  }, {
-      "$facet": {
-          "total": [{
-              "$count": "count"
-          }],
-          "articles": [{
-              "$skip": skip
-          }, {
-              "$limit": int(fetch_count)
-          }]
-      }
-  }])
+    results = list(news_articles)[0]
+    results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
 
-  results = list(news_articles)[0]
-  results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
-
-  return results
+    return results
+  except Exception as e:
+    logging.error(f'Error: {e}')
+    return {}
 
 
 def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
@@ -74,6 +79,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
   Returns: article ids in DB
   """
   try:
+    logging.info(f'Saving article from {page_url} test mode {test_mode}')
     html = base64.b64decode(html).decode('utf-8')
     # print(html)
     # boilerplate and save article in file
@@ -145,51 +151,56 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
 
 
 def products_data(company_id, start_row, fetch_count):
+  try:
+    logging.info(f'Retrieving products for {company_id} page {start_row}')
 
-  skip = (start_row - 1) * fetch_count
+    skip = (start_row - 1) * fetch_count
 
-  news_articles = news.aggregate([{
-      "$match": {
-          "company_id": ObjectId(company_id),
-          "prod_desc": {
-              '$exists': 1
-          }
-      }
-  }, {
-      "$project": {
-          "_id": 0,
-          "description": '$prod_desc',
-          "mentions": '$prod_mentions',
-          "is_translated": 1,
-          "date": {
-              '$dateToString': {
-                  'format': '%Y-%m-%d',
-                  'date': {
-                      '$toDate': '$date'
-                  }
-              }
-          },
-          "title": 1,
-          "url": 1
-      }
-  }, {
-      "$sort": {
-          "date": -1
-      }
-  }, {
-      "$facet": {
-          "total": [{
-              "$count": "count"
-          }],
-          "articles": [{
-              "$skip": skip
-          }, {
-              "$limit": int(fetch_count)
-          }]
-      }
-  }])
+    news_articles = news.aggregate([{
+        "$match": {
+            "company_id": ObjectId(company_id),
+            "prod_desc": {
+                '$exists': 1
+            }
+        }
+    }, {
+        "$project": {
+            "_id": 0,
+            "description": '$prod_desc',
+            "mentions": '$prod_mentions',
+            "is_translated": 1,
+            "date": {
+                '$dateToString': {
+                    'format': '%Y-%m-%d',
+                    'date': {
+                        '$toDate': '$date'
+                    }
+                }
+            },
+            "title": 1,
+            "url": 1
+        }
+    }, {
+        "$sort": {
+            "date": -1
+        }
+    }, {
+        "$facet": {
+            "total": [{
+                "$count": "count"
+            }],
+            "articles": [{
+                "$skip": skip
+            }, {
+                "$limit": int(fetch_count)
+            }]
+        }
+    }])
 
-  results = list(news_articles)[0]
-  results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
+    results = list(news_articles)[0]
+    results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
 
-  return results
+    return results
+  except Exception as e:
+    logging.error(f'Error: {e}')
+    return {}
