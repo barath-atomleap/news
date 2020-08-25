@@ -8,7 +8,7 @@ import logging
 from news_processing import news_boilerplater, get_company_info_from_article
 
 db = get_own_db_connection()
-news = db.news_2
+news = db.news
 news.create_index('url')
 news.create_index([('company_id', 1), ('url', 1)], unique=True)
 
@@ -122,7 +122,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           }
           if is_translated:
             data['is_translated'] = is_translated
-          article_id = news.insert_one(data)
+          article_id = db.news_2.insert_one(data)
           article_id_list.append(article_id)
       if company_article_match_found is False:
         # add article without company information for now - new companies in our DB might match in the future
@@ -135,7 +135,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
         }
         if is_translated:
           data['is_translated'] = is_translated
-        article_id = news.insert_one(data)
+        article_id = db.news_2.insert_one(data)
         # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
         #                                    upsert=True)
         article_ids = [str(article_id.inserted_id)]
