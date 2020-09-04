@@ -6,12 +6,13 @@ from fuzzywuzzy import fuzz
 nltk.download('punkt')
 
 
-def news_boilerplater(html: str):
+def news_boilerplater(html: str = '', url: str = ''):
   """
   Receives a web page from a news source with `html` contents.
   Returns the title, text content and publication date of this news entry.
   Args:
       html: string with all html code of this page
+      url: string with article url to be scraped
   Returns:
       title (str), content (str), publication_date (str)
   """
@@ -30,6 +31,9 @@ def news_boilerplater(html: str):
       text = text
     text = re.sub(pattern="\s+", repl=" ", string=text)
     return text.strip()
+
+  if not html and url:
+    html = trafilatura.fetch_url(url)
 
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
   if page_content is not None:

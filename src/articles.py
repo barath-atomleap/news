@@ -80,19 +80,17 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
   """
   try:
     logging.info(f'Saving article from {page_url} test mode {test_mode}')
-    html = base64.b64decode(html).decode('utf-8')
-    # print(html)
+    if html:
+      html = base64.b64decode(html).decode('utf-8')
+
     # boilerplate and save article in file
-    title, content, date = news_boilerplater(html=html)
+    title, content, date = news_boilerplater(html=html, url=page_url)
     logging.info(f'test_mode: {test_mode}')
     logging.info(f'title: {title}')
     logging.info(f'content: {content}')
-    # print(test_mode)
     if test_mode:
       return {'title': title, 'content': content}
-    else:
-      html_ref = save_blob('news/html/' + clean_url(page_url), html)
-      content_ref = save_blob('news/content/' + clean_url(page_url), content)
+
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
       is_translated = False
@@ -102,8 +100,17 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
       if not is_text_in_english(content):
         content = translate_to_english(content)
         is_translated = True
+
+      # name entity recognition
+      # companies = companies + [NER stuff]
+
+      if companies:
+        html_ref = save_blob('news/html/' + clean_url(page_url), html)
+        content_ref = save_blob('news/content/' + clean_url(page_url), content)
+
       company_article_match_found = False  # at least one match
       article_id_list = list()  # all article company pairs
+
       # try to fill the news tabs of the companies in our DB with this new article
       for company in companies:
         news_snippet_about_company = get_company_info_from_article(company_name=company["name"],
@@ -124,26 +131,11 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
             data['is_translated'] = is_translated
           article_id = db.news_2.insert_one(data)
           article_id_list.append(article_id)
-      if company_article_match_found is False:
-        # add article without company information for now - new companies in our DB might match in the future
-        data = {
-            'url': page_url,
-            'content_ref': content_ref,
-            'title': title,
-            'html_ref': html_ref,
-            'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
-        }
-        if is_translated:
-          data['is_translated'] = is_translated
-        article_id = db.news_2.insert_one(data)
-        # article_id = article.update_one(new_page.to_native(role='query'), {'$set': new_page.to_native(role='set')},
-        #                                    upsert=True)
-        article_ids = [str(article_id.inserted_id)]
-      else:
+      if company_article_match_found:
         article_ids = [str(article_id.inserted_id) for article_id in article_id_list]
-      return {'article_ids': article_ids, 'title': title, 'content': content}
-    else:
-      return {}
+        return {'article_ids': article_ids, 'title': title, 'content': content}
+
+    return {}
 
   except Exception as e:
     logging.error(f'Error: {e}')
