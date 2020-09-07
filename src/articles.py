@@ -130,10 +130,17 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           if is_translated:
             data['is_translated'] = is_translated
           article_id = db.news_2.insert_one(data)
-          article_id_list.append(article_id)
+          article_id_list.append(str(article_id.inserted_id))
+
+          # TODO: call products service
+          # {
+          #     'article_id': str(article_id.inserted_id),
+          #     'title': title,
+          #     'content': content
+          # }
+
       if company_article_match_found:
-        article_ids = [str(article_id.inserted_id) for article_id in article_id_list]
-        return {'article_ids': article_ids, 'title': title, 'content': content}
+        return {'article_ids': article_id_list, 'title': title, 'content': content}
 
     return {}
 
