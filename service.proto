@@ -32,7 +32,12 @@ message ArticlesResponse {
 }
 
 message AddArticlesRequest {
-  string company_url = 1;
+  message Company {
+    string _id = 1;
+    string name = 2;
+    // string url = 3;
+  }
+  repeated Company companies = 1;
   string url = 2;
   string html = 3;
   bool test_mode = 4;

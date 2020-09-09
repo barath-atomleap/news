@@ -16,11 +16,11 @@ class News(service_pb2_grpc.News):
     return service_pb2.ArticlesResponse(articles=articles.get('articles', []), total_articles=articles.get('total', 0))
 
   def add_articles(self, request, context):
-    company_url = request.company_url
+    companies = request.companies
     page_url = request.url
     html = request.html
     test_mode = request.test_mode
-    article = save_articles(company_url, page_url, html, test_mode)
+    article = save_articles(companies, page_url, html, test_mode)
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
                                            content=article.get('content', ''))

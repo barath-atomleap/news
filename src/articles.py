@@ -129,15 +129,16 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           }
           if is_translated:
             data['is_translated'] = is_translated
-          article_id = db.news_2.insert_one(data)
+          article_id = db.news.insert_one(data)
           article_id_list.append(str(article_id.inserted_id))
 
           # TODO: call products service
-          # {
-          #     'article_id': str(article_id.inserted_id),
-          #     'title': title,
-          #     'content': content
-          # }
+          import requests
+          prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
+          url = 'https://api.delphai.live/delphai.validation.Validation.validate'
+          x = requests.post(url, json=prod_data)
+          results = x.json()
+          # print(results)
 
       if company_article_match_found:
         return {'article_ids': article_id_list, 'title': title, 'content': content}
