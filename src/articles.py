@@ -87,7 +87,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
     title, content, date = news_boilerplater(html=html, url=page_url)
     logging.info(f'test_mode: {test_mode}')
     logging.info(f'title: {title}')
-    logging.info(f'content: {content}')
+    # logging.info(f'content: {content}')
     if test_mode:
       return {'title': title, 'content': content}
 
@@ -118,7 +118,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
         if news_snippet_about_company != "":
           company_article_match_found = True
           data = {
-              'company_id': company['_id'],
+              'company_id': ObjectId(company['_id']),
               'url': page_url,
               'content_ref': content_ref,
               'title': title,
@@ -132,13 +132,12 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           article_id = db.news.insert_one(data)
           article_id_list.append(str(article_id.inserted_id))
 
-          # TODO: call products service
+          # calling products service
           import requests
           prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
-          url = 'https://api.delphai.live/delphai.validation.Validation.validate'
+          url = 'https://api.delphai.live/delphai.products.Products.add_products'
           x = requests.post(url, json=prod_data)
           results = x.json()
-          # print(results)
 
       if company_article_match_found:
         return {'article_ids': article_id_list, 'title': title, 'content': content}
