@@ -1,11 +1,13 @@
 import base64
+import requests
 from bson import ObjectId
 import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
 from delphai_backend_utils.formatting import clean_url
 from utils.utils import save_blob, is_text_in_english, translate_to_english
 import logging
-from news_processing import news_boilerplater, get_company_info_from_article
+from news_processing import news_boilerplater, get_company_info_from_article, \
+    get_company_nes_from_article, match_nes_to_db_companies
 
 db = get_own_db_connection()
 news = db.news
@@ -72,7 +74,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
   appear in its news tab. Old implementation: If there is at least one mentioned company, then we also detect
   sentences in the text that discuss products and return the most relevant sentence.
   Args:
-      companies: list of dictionaries with (_id, name, url) for each company
+      companies: list of dictionaries with (_id, name) for each company
       page_url: url of the article
       html: html content of the article
       test_mode: return results instead of saving
@@ -101,8 +103,34 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
         content = translate_to_english(content)
         is_translated = True
 
-      # name entity recognition
-      # companies = companies + [NER stuff]
+      # save the company descriptions as they are discussed in the article
+      company_to_description_dict = dict()
+      if companies:
+        # find fuzzy (98% of hard matching to deal with potential typos) mentions of the given companies in the article
+        for company in companies:
+          company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
+                                                                         content="{}. {}".format(title, content))
+
+      # get named entities
+      nes = get_company_nes_from_article(article="{}. {}".format(title, content))
+      # if ner service didn't return an empty reponse and if article has entities
+      if nes is not None:
+        # get company names
+        organization_names = [i[0] for i in nes]
+        # match them to DB
+        matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(named_entities=organization_names,
+                                                    hard_matching="no")
+        # combine given companies and discovered companies in the text
+        for idx, matched_ne in enumerate(matched_nes):
+          if not any(matched_nes_ids[idx] in d for d in company_to_description_dict):
+            company_dict = dict()
+            company_dict["_id"] = matched_nes_ids[idx]
+            company_dict["name"] = matched_ne
+            # if a company is both in the `companies` list and in the `matched_nes` list, we keep this mention
+            company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=matched_ne,
+                                                                                    content="{}. {}".format(title,
+                                                                                                            content))
+            companies.append(company_dict)
 
       if companies:
         html_ref = save_blob('news/html/' + clean_url(page_url), html)
@@ -113,16 +141,14 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
 
       # try to fill the news tabs of the companies in our DB with this new article
       for company in companies:
-        news_snippet_about_company = get_company_info_from_article(company_name=company["name"],
-                                                                   content="{}. {}".format(title, content))
-        if news_snippet_about_company != "":
+        if company_to_description_dict[company["_id"]] != "":
           company_article_match_found = True
           data = {
               'company_id': ObjectId(company['_id']),
               'url': page_url,
               'content_ref': content_ref,
               'title': title,
-              'description': news_snippet_about_company,
+              'description': company_to_description_dict[company["_d"]],
               'mentions': [company["name"]],
               'html_ref': html_ref,
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
@@ -133,7 +159,6 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           article_id_list.append(str(article_id.inserted_id))
 
           # calling products service
-          import requests
           prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
           url = 'https://api.delphai.live/delphai.products.Products.add_products'
           x = requests.post(url, json=prod_data)
