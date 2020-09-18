@@ -25,6 +25,8 @@ googletrans = "3.0.0"
 fuzzywuzzy = "*"
 nltk = "*"
 python-levenshtein = "0.12.0"
+requests = "*"
+cleanco = "*"
 master = {git = "https://github.com/wearefair/protobuf-to-dict"}
 
 [requires]
