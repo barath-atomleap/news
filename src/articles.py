@@ -79,6 +79,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
   Returns: article ids in DB
   """
   try:
+    message = ''
     logging.info(f'Saving article from {page_url} test mode {test_mode}')
     if html:
       html = base64.b64decode(html).decode('utf-8')
@@ -87,12 +88,14 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
     title, content, date = news_boilerplater(html=html, url=page_url)
     logging.info(f'test_mode: {test_mode}')
     logging.info(f'title: {title}')
-    # logging.info(f'content: {content}')
+    logging.info(f'content: {content}')
     if test_mode:
       return {'title': title, 'content': content}
 
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
+      html_ref = ''
+      content_ref = ''
       is_translated = False
       # translate text if necessary
       if not is_text_in_english(title):
@@ -105,8 +108,11 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
       # companies = companies + [NER stuff]
 
       if companies:
-        html_ref = save_blob('news/html/' + clean_url(page_url), html)
-        content_ref = save_blob('news/content/' + clean_url(page_url), content)
+        try:
+          html_ref = save_blob('news/html/' + clean_url(page_url), html)
+          content_ref = save_blob('news/content/' + clean_url(page_url), content)
+        except Exception as e:
+          logging.error(f'Error saving to blob storage: {e}')
 
       company_article_match_found = False  # at least one match
       article_id_list = list()  # all article company pairs
@@ -118,35 +124,45 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
         if news_snippet_about_company != "":
           company_article_match_found = True
           data = {
-              'company_id': ObjectId(company['_id']),
-              'url': page_url,
-              'content_ref': content_ref,
               'title': title,
               'description': news_snippet_about_company,
               'mentions': [company["name"]],
-              'html_ref': html_ref,
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
           }
           if is_translated:
             data['is_translated'] = is_translated
-          article_id = db.news.insert_one(data)
-          article_id_list.append(str(article_id.inserted_id))
+          if content_ref:
+            data['content_ref'] = content_ref
+          if html_ref:
+            data['html_ref'] = html_ref
+          article_id = db.news.update_one({
+              'company_id': ObjectId(company['_id']),
+              'url': page_url
+          }, {'$set': data},
+                                          upsert=True)
+          # article_id = db.news.insert_one(data)
+          if article_id.upserted_id:
+            article_id_list.append(str(article_id.upserted_id))
+            article_id = str(article_id.upserted_id)
+          else:
+            message = 'Article already exists'
+            article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
           # calling products service
           import requests
-          prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
+          prod_data = {'article_id': article_id, 'title': title, 'content': content}
           url = 'https://api.delphai.live/delphai.products.Products.add_products'
           x = requests.post(url, json=prod_data)
           results = x.json()
 
       if company_article_match_found:
-        return {'article_ids': article_id_list, 'title': title, 'content': content}
+        return {'article_ids': article_id_list, 'title': title, 'content': content, 'message': message}
 
-    return {}
+    return {'message': message}
 
   except Exception as e:
     logging.error(f'Error: {e}')
-    return {}
+    return {'message': f'Error: {e}'}
 
 
 def products_data(company_id, start_row, fetch_count):

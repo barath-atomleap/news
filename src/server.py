@@ -22,7 +22,8 @@ class News(service_pb2_grpc.News):
                             request_dict.get('test_mode'))
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
-                                           content=article.get('content', ''))
+                                           content=article.get('content', ''),
+                                           message=article.get('message', ''))
 
   def get_products(self, request, context):
     company_id = request.company_id
