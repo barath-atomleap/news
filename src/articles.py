@@ -119,7 +119,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
         organization_names = [i[0] for i in nes]
         # match them to DB
         matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(named_entities=organization_names,
-                                                    hard_matching="no")
+                                                    hard_matching=False)
         # combine given companies and discovered companies in the text
         for idx, matched_ne in enumerate(matched_nes):
           if not any(matched_nes_ids[idx] in d for d in company_to_description_dict):

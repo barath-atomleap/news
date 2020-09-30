@@ -94,11 +94,11 @@ def get_company_nes_from_article(article: str):
   return None
 
 
-def match_nes_to_db_companies(named_entities: list, hard_matching: str):
+def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     """
     Given a list of organizations discovered in the text with the named entity recognizer, match them to our DB and
     find the corresponding companies by name and url.
-    :param hard_matching: if this is 'yes', due to duplicates in the db, we only match strictly when the two companies
+    :param hard_matching: if this is True, due to duplicates in the db, we only match strictly when the two companies
      have exactly the same name
     :param named_entities: list of organizations discovered in the text
     """
@@ -119,7 +119,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: str):
             company_in_db = best_matches[mentioned_organization]["best"]["name"]
             url_in_db = best_matches[mentioned_organization]["best"]["url"]
             id_in_db = best_matches[mentioned_organization]["best"]["id"]
-            if hard_matching == "yes":
+            if hard_matching:
                 if mentioned_organization == company_in_db:
                     entities_to_keep.append(company_in_db)
                     entities_urls.append(url_in_db)
