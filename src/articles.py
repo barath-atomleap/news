@@ -122,6 +122,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
                                                     hard_matching=False)
         # combine given companies and discovered companies in the text
         for idx, matched_ne in enumerate(matched_nes):
+          # if the discovered entities are not already given in `companies`
           if not any(matched_nes_ids[idx] in d for d in company_to_description_dict):
             company_dict = dict()
             company_dict["_id"] = matched_nes_ids[idx]
