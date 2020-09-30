@@ -1,5 +1,6 @@
 import base64
 import requests
+import string
 from bson import ObjectId
 import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
@@ -145,14 +146,17 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
 
       company_article_match_found = False  # at least one match
       article_id_list = list()  # all article company pairs
-
+      # make returned strings printable
+      printable = set(string.printable)
       # try to fill the news tabs of the companies in our DB with this new article
       for company in companies:
         if company_to_description_dict[company["_id"]] != "":
           company_article_match_found = True
+          printable_description = ''.join(filter(lambda ch: ch in printable, company_to_description_dict[company[
+              "_id"]]))
           data = {
               'title': title,
-              'description': company_to_description_dict[company["_id"]],
+              'description': printable_description,
               'mentions': [company["name"]],
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
           }
@@ -179,8 +183,9 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
           # prod_data = {'article_id': article_id, 'title': title, 'content': content}
           url = 'https://api.delphai.live/delphai.products.Products.add_products'
-          x = requests.post(url, json=prod_data)
-          results = x.json()
+          product_request = requests.post(url, json=prod_data)
+          product_sentence = product_request.text
+          printable_product_sentence = ''.join(filter(lambda ch: ch in printable, product_sentence))
 
       if company_article_match_found:
         return {'article_ids': article_id_list, 'title': title, 'content': content, 'message': message}
