@@ -149,7 +149,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
               'url': page_url,
               'content_ref': content_ref,
               'title': title,
-              'description': company_to_description_dict[company["_d"]],
+              'description': company_to_description_dict[company["_id"]],
               'mentions': [company["name"]],
               'html_ref': html_ref,
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
