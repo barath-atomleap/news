@@ -75,7 +75,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
   appear in its news tab. Old implementation: If there is at least one mentioned company, then we also detect
   sentences in the text that discuss products and return the most relevant sentence.
   Args:
-      companies: list of dictionaries with (_id, name) for each company
+      companies: list of dictionaries with (_id or url, name) for each company
       page_url: url of the article
       html: html content of the article
       test_mode: return results instead of saving
@@ -112,8 +112,17 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
       if companies:
         # find fuzzy (98% of hard matching to deal with potential typos) mentions of the given companies in the article
         for company in companies:
+          try:
+            company["_id"] = str(ObjectId(company["company"]))
+          except:
+            cmp = db.companies.find_one({'url': clean_url(company["company"])})
+            if cmp:
+              company["_id"] = cmp["_id"]
+            else:
+              continue
           company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
-                                                                         content="{}. {}".format(title, content))
+                                                                                      content="{}. {}".format(
+                                                                                          title, content))
 
       # get named entities
       nes = get_company_nes_from_article(article="{}. {}".format(title, content))
@@ -123,7 +132,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
         organization_names = [i[0] for i in nes]
         # match them to DB
         matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(named_entities=organization_names,
-                                                    hard_matching=False)
+                                                                                   hard_matching=False)
         # combine given companies and discovered companies in the text
         for idx, matched_ne in enumerate(matched_nes):
           # if the discovered entities are not already given in `companies`
@@ -133,8 +142,8 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
             company_dict["name"] = matched_ne
             # if a company is both in the `companies` list and in the `matched_nes` list, we keep this mention
             company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=matched_ne,
-                                                                                    content="{}. {}".format(title,
-                                                                                                            content))
+                                                                                             content="{}. {}".format(
+                                                                                                 title, content))
             companies.append(company_dict)
 
       if companies:
@@ -152,8 +161,8 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
       for company in companies:
         if company_to_description_dict[company["_id"]] != "":
           company_article_match_found = True
-          printable_description = ''.join(filter(lambda ch: ch in printable, company_to_description_dict[company[
-              "_id"]]))
+          printable_description = ''.join(
+              filter(lambda ch: ch in printable, company_to_description_dict[company["_id"]]))
           data = {
               'title': title,
               'description': printable_description,
@@ -184,8 +193,6 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           # prod_data = {'article_id': article_id, 'title': title, 'content': content}
           url = 'https://api.delphai.live/delphai.products.Products.add_products'
           product_request = requests.post(url, json=prod_data)
-          product_sentence = product_request.text
-          printable_product_sentence = ''.join(filter(lambda ch: ch in printable, product_sentence))
 
       if company_article_match_found:
         return {'article_ids': article_id_list, 'title': title, 'content': content, 'message': message}
