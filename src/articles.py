@@ -117,7 +117,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
           except:
             cmp = db.companies.find_one({'url': clean_url(company["company"])})
             if cmp:
-              company["_id"] = cmp["_id"]
+              company["_id"] = str(cmp["_id"])
             else:
               continue
           company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
