@@ -40,6 +40,7 @@ message AddArticlesRequest {
   string url = 2;
   string html = 3;
   bool test_mode = 4;
+  string date = 5;
 }
 
 message AddArticlesResponse {

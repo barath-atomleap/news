@@ -19,7 +19,7 @@ class News(service_pb2_grpc.News):
   def add_articles(self, request, context):
     request_dict = protobuf_to_dict(request)
     article = save_articles(request_dict.get('companies'), request_dict.get('url'), request_dict.get('html'),
-                            request_dict.get('test_mode'))
+                            request_dict.get('test_mode'), request_dict.get('date'))
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
                                            content=article.get('content', ''),

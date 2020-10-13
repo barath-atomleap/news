@@ -68,7 +68,7 @@ def articles_data(company_id, start_row, fetch_count):
     return {}
 
 
-def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
+def save_articles(companies: list, page_url: str, html: str, test_mode: bool, date: str = ''):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -79,6 +79,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
       page_url: url of the article
       html: html content of the article
       test_mode: return results instead of saving
+      date: string with article date (optional)
   Returns: article ids in DB
   """
   try:
@@ -88,7 +89,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool):
       html = base64.b64decode(html).decode('utf-8')
 
     # boilerplate and save article in file
-    title, content, date = news_boilerplater(html=html, url=page_url)
+    title, content, date = news_boilerplater(html=html, url=page_url, date=date)
     logging.info(f'test_mode: {test_mode}')
     logging.info(f'title: {title}')
     logging.info(f'content: {content}')
