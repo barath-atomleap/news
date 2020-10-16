@@ -98,105 +98,113 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
 
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
-      html_ref = ''
-      content_ref = ''
-      is_translated = False
-      # translate text if necessary
-      if not is_text_in_english(title):
-        title = translate_to_english(title)
-      if not is_text_in_english(content):
-        content = translate_to_english(content)
-        is_translated = True
+      try:
+        html_ref = ''
+        content_ref = ''
+        is_translated = False
+        # translate text if necessary
+        if not is_text_in_english(title):
+          title = translate_to_english(title)
+        if not is_text_in_english(content):
+          content = translate_to_english(content)
+          is_translated = True
 
-      # save the company descriptions as they are discussed in the article
-      company_to_description_dict = dict()
-      if companies:
-        # find fuzzy (98% of hard matching to deal with potential typos) mentions of the given companies in the article
-        for company in companies:
+        # save the company descriptions as they are discussed in the article
+        company_to_description_dict = dict()
+        if companies:
+          # find fuzzy (98% of hard matching to deal with potential typos) mentions of the given companies in the article
+          for company in companies:
+            try:
+              company["_id"] = str(ObjectId(company["company"]))
+            except:
+              cmp = db.companies.find_one({'url': clean_url(company["company"])})
+              if cmp:
+                company["_id"] = str(cmp["_id"])
+              else:
+                continue
+            company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
+                                                                                        content="{}. {}".format(
+                                                                                            title, content))
+
+        # get named entities
+        nes = get_company_nes_from_article(article="{}. {}".format(title, content))
+        # if ner service didn't return an empty reponse and if article has entities
+        if nes is not None:
+          # get company names
+          organization_names = [i[0] for i in nes]
+          # match them to DB
+          matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(named_entities=organization_names,
+                                                                                     hard_matching=False)
+          # combine given companies and discovered companies in the text
+          for idx, matched_ne in enumerate(matched_nes):
+            # if the discovered entities are not already given in `companies`
+            if not any(matched_nes_ids[idx] in d for d in company_to_description_dict):
+              company_dict = dict()
+              company_dict["_id"] = matched_nes_ids[idx]
+              company_dict["name"] = matched_ne
+              # if a company is both in the `companies` list and in the `matched_nes` list, we keep this mention
+              company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=matched_ne,
+                                                                                               content="{}. {}".format(
+                                                                                                   title, content))
+              companies.append(company_dict)
+
+        if companies:
           try:
-            company["_id"] = str(ObjectId(company["company"]))
-          except:
-            cmp = db.companies.find_one({'url': clean_url(company["company"])})
-            if cmp:
-              company["_id"] = str(cmp["_id"])
+            html_ref = save_blob('news/html/' + clean_url(page_url), html)
+            content_ref = save_blob('news/content/' + clean_url(page_url), content)
+          except Exception as e:
+            logging.error(f'Error saving to blob storage: {e}')
+
+        company_article_match_found = False  # at least one match
+        article_id_list = list()  # all article company pairs
+        # make returned strings printable
+        printable = set(string.printable)
+        # try to fill the news tabs of the companies in our DB with this new article
+        for company in companies:
+          if company_to_description_dict[company["_id"]] != "":
+            company_article_match_found = True
+            printable_description = ''.join(
+                filter(lambda ch: ch in printable, company_to_description_dict[company["_id"]]))
+            data = {
+                'title': title,
+                'description': printable_description,
+                'mentions': [company["name"]],
+                'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
+            }
+            if is_translated:
+              data['is_translated'] = is_translated
+            if content_ref:
+              data['content_ref'] = content_ref
+            if html_ref:
+              data['html_ref'] = html_ref
+            article_id = db.news.update_one({
+                'company_id': ObjectId(company['_id']),
+                'url': page_url
+            }, {'$set': data},
+                                            upsert=True)
+            # article_id = db.news.insert_one(data)
+            if article_id.upserted_id:
+              article_id_list.append(str(article_id.upserted_id))
+              article_id = str(article_id.upserted_id)
             else:
-              continue
-          company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
-                                                                                      content="{}. {}".format(
-                                                                                          title, content))
+              message = 'Article already exists'
+              article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
-      # get named entities
-      nes = get_company_nes_from_article(article="{}. {}".format(title, content))
-      # if ner service didn't return an empty reponse and if article has entities
-      if nes is not None:
-        # get company names
-        organization_names = [i[0] for i in nes]
-        # match them to DB
-        matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(named_entities=organization_names,
-                                                                                   hard_matching=False)
-        # combine given companies and discovered companies in the text
-        for idx, matched_ne in enumerate(matched_nes):
-          # if the discovered entities are not already given in `companies`
-          if not any(matched_nes_ids[idx] in d for d in company_to_description_dict):
-            company_dict = dict()
-            company_dict["_id"] = matched_nes_ids[idx]
-            company_dict["name"] = matched_ne
-            # if a company is both in the `companies` list and in the `matched_nes` list, we keep this mention
-            company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=matched_ne,
-                                                                                             content="{}. {}".format(
-                                                                                                 title, content))
-            companies.append(company_dict)
+            # calling products service
+            try:
+              prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
+              # prod_data = {'article_id': article_id, 'title': title, 'content': content}
+              url = 'https://api.delphai.live/delphai.products.Products.add_products'
+              product_request = requests.post(url, json=prod_data)
+            except Exception as e:
+              logging.error(f'Error getting product: {e}')
+              return {'title': title, 'content': content, 'message': 'Could not extract product info'}
 
-      if companies:
-        try:
-          html_ref = save_blob('news/html/' + clean_url(page_url), html)
-          content_ref = save_blob('news/content/' + clean_url(page_url), content)
-        except Exception as e:
-          logging.error(f'Error saving to blob storage: {e}')
-
-      company_article_match_found = False  # at least one match
-      article_id_list = list()  # all article company pairs
-      # make returned strings printable
-      printable = set(string.printable)
-      # try to fill the news tabs of the companies in our DB with this new article
-      for company in companies:
-        if company_to_description_dict[company["_id"]] != "":
-          company_article_match_found = True
-          printable_description = ''.join(
-              filter(lambda ch: ch in printable, company_to_description_dict[company["_id"]]))
-          data = {
-              'title': title,
-              'description': printable_description,
-              'mentions': [company["name"]],
-              'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
-          }
-          if is_translated:
-            data['is_translated'] = is_translated
-          if content_ref:
-            data['content_ref'] = content_ref
-          if html_ref:
-            data['html_ref'] = html_ref
-          article_id = db.news.update_one({
-              'company_id': ObjectId(company['_id']),
-              'url': page_url
-          }, {'$set': data},
-                                          upsert=True)
-          # article_id = db.news.insert_one(data)
-          if article_id.upserted_id:
-            article_id_list.append(str(article_id.upserted_id))
-            article_id = str(article_id.upserted_id)
-          else:
-            message = 'Article already exists'
-            article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
-
-          # calling products service
-          prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
-          # prod_data = {'article_id': article_id, 'title': title, 'content': content}
-          url = 'https://api.delphai.live/delphai.products.Products.add_products'
-          product_request = requests.post(url, json=prod_data)
-
-      if company_article_match_found:
-        return {'article_ids': article_id_list, 'title': title, 'content': content, 'message': message}
+        if company_article_match_found:
+          return {'article_ids': article_id_list, 'title': title, 'content': content, 'message': message}
+      except Exception as e:
+        logging.error(f'Error: {e}')
+        return {'title': title, 'content': content, 'message': f'Error: {e}'}
 
     return {'message': message}
 

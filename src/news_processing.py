@@ -43,15 +43,11 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
   if not html and url:
     html = trafilatura.fetch_url(url)
     if not html:
-      data = {
-          'url':
-          'https://www.wsj.com/articles/amd-is-in-advanced-talks-to-buy-xilinx-11602205553?mod=searchresults&page=1&pos=2'
-      }
+      data = {'url': url}
 
       url = 'https://delphai-source-scraper.azurewebsites.net/api/scrape-single-url'
       x = requests.post(url, json=data)
       html = base64.b64decode(x.json()['html']).decode('utf-8')
-    # print('html', html)
 
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
   if page_content is not None:
@@ -61,9 +57,8 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
       try:
         article_publication_date = page_metadata.date
       except Exception as e:
-        print('no date:', e)
-        if date:
-          article_publication_date = date
+        logging.error('no date found:', e)
+        article_publication_date = date if date else None
       article_title = preprocess_text(str(page_metadata.title))
       return article_title, page_content, article_publication_date
     else:
