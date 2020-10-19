@@ -84,13 +84,12 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
   """
   try:
     message = ''
-    logging.info(f'Saving article from {page_url} test mode {test_mode}')
+    logging.info(f'Saving article from {page_url}, test mode {test_mode}')
     if html:
       html = base64.b64decode(html).decode('utf-8')
 
     # boilerplate and save article in file
     title, content, date = news_boilerplater(html=html, url=page_url, date=date)
-    logging.info(f'test_mode: {test_mode}')
     logging.info(f'title: {title}')
     logging.info(f'content: {content}')
     if test_mode:

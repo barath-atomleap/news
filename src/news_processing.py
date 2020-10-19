@@ -35,7 +35,7 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     try:
       text = clean(text)
     except Exception as e:
-      print("{}: Can't preprocess news article text with cleantext package. Keeping the original text.", str(e))
+      logging.error("{}: Can't preprocess news article text with cleantext package. Keeping the original text.", str(e))
       text = text
     text = re.sub(pattern="\s+", repl=" ", string=text)
     return text.strip()
@@ -48,8 +48,9 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
       url = 'https://delphai-source-scraper.azurewebsites.net/api/scrape-single-url'
       x = requests.post(url, json=data)
       html = base64.b64decode(x.json()['html']).decode('utf-8')
-
+  # logging.info(f'html after: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
+  # logging.info(f'page_content: {page_content}')
   if page_content is not None:
     page_content = preprocess_text(str(page_content))
     page_metadata = trafilatura.metadata.extract_metadata(html)
