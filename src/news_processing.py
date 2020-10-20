@@ -56,11 +56,15 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     page_metadata = trafilatura.metadata.extract_metadata(html)
     if page_metadata is not None:
       try:
-        article_publication_date = page_metadata.date
+        article_publication_date = page_metadata["date"]
       except Exception as e:
-        logging.error('no date found:', e)
+        logging.error(f'no date found for {url}:', e)
         article_publication_date = date if date else None
-      article_title = preprocess_text(str(page_metadata.title))
+      try:
+        article_title = preprocess_text(str(page_metadata["title"]))
+      except Exception as e:
+        logging.error(f'no title found for {url}:', e)
+        article_title = None
       return article_title, page_content, article_publication_date
     else:
       return None, page_content, None
