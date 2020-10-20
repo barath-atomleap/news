@@ -44,10 +44,10 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     html = trafilatura.fetch_url(url)
     if not html:
       data = {'url': url}
-
       url = 'https://delphai-source-scraper.azurewebsites.net/api/scrape-single-url'
       x = requests.post(url, json=data)
       html = base64.b64decode(x.json()['html']).decode('utf-8')
+
   # logging.info(f'html after: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
   # logging.info(f'page_content: {page_content}')
@@ -118,7 +118,8 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
      have exactly the same name
     :param named_entities: list of organizations discovered in the text
     """
-  def get_names_of_matches(best_matches: dict):
+  def get_names_of_matches(best_matches: dict):  # TODO: return named entity and matched entity to search for both in
+    # the text
     """
         Get company names from the response of the name macther
         :param best_matches: dict with matches between company mentions in the news to the companies in the db
