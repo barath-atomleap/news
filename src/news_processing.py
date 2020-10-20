@@ -8,6 +8,9 @@ from fuzzywuzzy import fuzz
 import json
 import requests
 import logging
+
+from src.articles import db
+
 nltk.download('punkt')
 
 post_retry_times = 5
@@ -176,3 +179,58 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     except json.decoder.JSONDecodeError as e:
       logging.error(f'Error: from our NamesMatcher service: {e}')
   return None
+
+
+def create_company_to_description_dict(companies: list, title: str, content: str):
+  """
+  Save the company descriptions of the `companies` the way they are discussed in the article text.
+  Args:
+     companies: list of input companies to the service
+     title: news article title
+     content: news article body
+  Returns: dict with keys the company ids and values the mentions of these companies in the text
+  """
+
+  company_to_description_dict = dict()
+  if companies:
+    for company in companies:
+      try:
+        company["_id"] = str(ObjectId(company["company"]))
+      except:
+        cmp = db.companies.find_one({'url': clean_url(company["company"])})
+        if cmp:
+          company["_id"] = str(cmp["_id"])
+        else:
+          continue
+      company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
+                                                                                  content="{}. {}".format(
+                                                                                    title, content))
+  return company_to_description_dict
+
+
+def enrich_company_to_description_dict(company_to_description_dict: dict, companies: list, company_ids: list,
+                                       title: str, content: str):
+  """
+  Combine given companies and discovered companies in the company_desc dict.
+  Args:
+    company_to_description_dict: the dict with the sentences that have company mentions
+    companies: named entities that are discovered
+    company_ids: the company ids of the named entities in our DB
+    title: news article title
+    content: news article body
+  Returns: updated company_to_description_dict
+  """
+  new_companies = list()
+  for idx, matched_ne in enumerate(companies):
+    if (len(company_to_description_dict) > 0 and not any(company_ids[idx] in d for d in company_to_description_dict)) \
+            or \
+            (len(company_to_description_dict) == 0):
+      company_dict = dict()
+      company_dict["_id"] = company_ids[idx]
+      company_dict["name"] = matched_ne
+      company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(
+        company_name=matched_ne,
+        content="{}. {}".format(
+          title, content))
+      new_companies.append(company_dict)
+  return new_companies, company_to_description_dict
