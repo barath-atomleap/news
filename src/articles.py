@@ -6,9 +6,9 @@ import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
 from delphai_backend_utils.formatting import clean_url
 from utils.utils import save_blob, is_text_in_english, translate_to_english
-import logging
-from news_processing import news_boilerplater, get_company_info_from_article, \
-    get_company_nes_from_article, match_nes_to_db_companies
+import logging  # TODO: # use this instead: from delphai_backend_utils import logging
+from news_processing import news_boilerplater, get_company_nes_from_article, match_nes_to_db_companies, get_company_info_from_article
+
 
 db = get_own_db_connection()
 news = db.news
@@ -22,41 +22,41 @@ def articles_data(company_id, start_row, fetch_count):
     skip = (start_row - 1) * fetch_count
 
     news_articles = news.aggregate([{
-        "$match": {
-            "company_id": ObjectId(company_id)
-        }
+      "$match": {
+        "company_id": ObjectId(company_id)
+      }
     }, {
-        "$project": {
-            "_id": 0,
-            "description": 1,
-            "mentions": 1,
-            "is_translated": 1,
-            "date": {
-                '$dateToString': {
-                    'format': '%Y-%m-%d',
-                    'date': {
-                        '$toDate': '$date'
-                    }
-                }
-            },
-            "title": 1,
-            "url": 1
-        }
+      "$project": {
+        "_id": 0,
+        "description": 1,
+        "mentions": 1,
+        "is_translated": 1,
+        "date": {
+          '$dateToString': {
+            'format': '%Y-%m-%d',
+            'date': {
+              '$toDate': '$date'
+            }
+          }
+        },
+        "title": 1,
+        "url": 1
+      }
     }, {
-        "$sort": {
-            "date": -1
-        }
+      "$sort": {
+        "date": -1
+      }
     }, {
-        "$facet": {
-            "total": [{
-                "$count": "count"
-            }],
-            "articles": [{
-                "$skip": skip
-            }, {
-                "$limit": int(fetch_count)
-            }]
-        }
+      "$facet": {
+        "total": [{
+          "$count": "count"
+        }],
+        "articles": [{
+          "$skip": skip
+        }, {
+          "$limit": int(fetch_count)
+        }]
+      }
     }])
 
     results = list(news_articles)[0]
@@ -66,6 +66,62 @@ def articles_data(company_id, start_row, fetch_count):
   except Exception as e:
     logging.error(f'Error: {e}')
     return {}
+
+
+def create_company_to_description_dict(companies: list, title: str, content: str):
+  """
+  Save the descriptions of the `companies` the way they are discussed in the article text. A description in
+  this case is the text displayed in delphai under a url in the news tab.
+  Args:
+     companies: list of input companies to the service
+     title: news article title
+     content: news article body
+  Returns: dict with keys the company ids and values the sentences that mention these companies in the text
+  """
+
+  company_to_description_dict = dict()
+  if companies:
+    for company in companies:
+      try:
+        company["_id"] = str(ObjectId(company["company"]))
+      except:  # TODO: which exception is this?
+        cmp = db.companies.find_one({'url': clean_url(company["company"])})
+        if cmp:
+          company["_id"] = str(cmp["_id"])
+        else:
+          continue
+      company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
+                                                                                  content="{}. {}".format(
+                                                                                    title, content))
+  return company_to_description_dict
+
+
+def enrich_company_to_description_dict(company_to_description_dict: dict, companies: list, company_ids: list,
+                                       title: str, content: str):
+  """
+  Combine given companies and discovered companies in the company_desc dict.
+  Args:
+    company_to_description_dict: the dict with the sentences that have company mentions
+    companies: named entities that are discovered
+    company_ids: the company ids of the named entities in our DB
+    title: news article title
+    content: news article body
+  Returns: updated company_to_description_dict
+  """
+  new_companies = list()
+  for idx, matched_ne in enumerate(companies):
+    if (len(company_to_description_dict) > 0 and not any(company_ids[idx] in d for d in company_to_description_dict)) \
+            or \
+            (len(company_to_description_dict) == 0):
+      company_dict = dict()
+      company_dict["_id"] = company_ids[idx]
+      company_dict["name"] = matched_ne
+      company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(
+        company_name=matched_ne,
+        content="{}. {}".format(
+          title, content))
+      new_companies.append(company_dict)
+  return new_companies, company_to_description_dict
 
 
 def save_articles(companies: list, page_url: str, html: str, test_mode: bool, date: str = ''):
@@ -101,6 +157,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
         html_ref = ''
         content_ref = ''
         is_translated = False
+
         # translate text if necessary
         if not is_text_in_english(title):
           title = translate_to_english(title)
@@ -108,22 +165,9 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
           content = translate_to_english(content)
           is_translated = True
 
-        # save the company descriptions as they are discussed in the article
-        company_to_description_dict = dict()
-        if companies:
-          # find fuzzy (98% of hard matching to deal with potential typos) mentions of the given companies in the article
-          for company in companies:
-            try:
-              company["_id"] = str(ObjectId(company["company"]))
-            except:
-              cmp = db.companies.find_one({'url': clean_url(company["company"])})
-              if cmp:
-                company["_id"] = str(cmp["_id"])
-              else:
-                continue
-            company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
-                                                                                        content="{}. {}".format(
-                                                                                            title, content))
+        # find sentences with company mentions
+        company_to_description_dict = create_company_to_description_dict(companies=companies, title=title,
+                                                                         content=content)
 
         # get named entities
         nes = get_company_nes_from_article(article="{}. {}".format(title, content))
@@ -131,22 +175,23 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
         if nes is not None:
           # get company names
           organization_names = [i[0] for i in nes]
-          # match them to DB
-          matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(named_entities=organization_names,
-                                                                                     hard_matching=False)
-          # combine given companies and discovered companies in the text
-          for idx, matched_ne in enumerate(matched_nes):
-            # if the discovered entities are not already given in `companies`
-            if not any(matched_nes_ids[idx] in d for d in company_to_description_dict):
-              company_dict = dict()
-              company_dict["_id"] = matched_nes_ids[idx]
-              company_dict["name"] = matched_ne
-              # if a company is both in the `companies` list and in the `matched_nes` list, we keep this mention
-              company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=matched_ne,
-                                                                                               content="{}. {}".format(
-                                                                                                   title, content))
-              companies.append(company_dict)
 
+          # match them to DB
+          matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(
+            named_entities=organization_names,
+            hard_matching=False)
+
+          # save their descriptions
+          new_companies, company_to_description_dict = enrich_company_to_description_dict(
+            company_to_description_dict=company_to_description_dict,
+            companies=matched_nes,
+            company_ids=matched_nes_ids,
+            title=title,
+            content=content)
+
+          companies = companies + new_companies
+
+        # save data
         if companies:
           try:
             html_ref = save_blob('news/html/' + clean_url(page_url), html)
@@ -157,18 +202,18 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
         company_article_match_found = False  # at least one match
         article_id_list = list()  # all article company pairs
         # make returned strings printable
-        printable = set(string.printable)
+        printable = set(string.printable)  # TODO: use better approach for this
         # try to fill the news tabs of the companies in our DB with this new article
         for company in companies:
           if company_to_description_dict[company["_id"]] != "":
             company_article_match_found = True
             printable_description = ''.join(
-                filter(lambda ch: ch in printable, company_to_description_dict[company["_id"]]))
+              filter(lambda ch: ch in printable, company_to_description_dict[company["_id"]]))
             data = {
-                'title': title,
-                'description': printable_description,
-                'mentions': [company["name"]],
-                'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
+              'title': title,
+              'description': printable_description,
+              'mentions': [company["name"]],
+              'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
             }
             if is_translated:
               data['is_translated'] = is_translated
@@ -177,17 +222,19 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
             if html_ref:
               data['html_ref'] = html_ref
             article_id = db.news.update_one({
-                'company_id': ObjectId(company['_id']),
-                'url': page_url
+              'company_id': ObjectId(company['_id']),
+              'url': page_url
             }, {'$set': data},
-                                            upsert=True)
-            # article_id = db.news.insert_one(data)
+              upsert=True)
+
+            article_id = db.news.insert_one(data)
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
               article_id = str(article_id.upserted_id)
             else:
               message = 'Article already exists'
-              article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
+              article_id = str(
+                db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
             # calling products service
             try:
@@ -204,7 +251,6 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
       except Exception as e:
         logging.error(f'Error: {e}')
         return {'title': title, 'content': content, 'message': f'Error: {e}'}
-
     return {'message': message}
 
   except Exception as e:
@@ -219,44 +265,44 @@ def products_data(company_id, start_row, fetch_count):
     skip = (start_row - 1) * fetch_count
 
     news_articles = news.aggregate([{
-        "$match": {
-            "company_id": ObjectId(company_id),
-            "prod_desc": {
-                '$exists': 1
+      "$match": {
+        "company_id": ObjectId(company_id),
+        "prod_desc": {
+          '$exists': 1
+        }
+      }
+    }, {
+      "$project": {
+        "_id": 0,
+        "description": '$prod_desc',
+        "mentions": '$prod_mentions',
+        "is_translated": 1,
+        "date": {
+          '$dateToString': {
+            'format': '%Y-%m-%d',
+            'date': {
+              '$toDate': '$date'
             }
-        }
+          }
+        },
+        "title": 1,
+        "url": 1
+      }
     }, {
-        "$project": {
-            "_id": 0,
-            "description": '$prod_desc',
-            "mentions": '$prod_mentions',
-            "is_translated": 1,
-            "date": {
-                '$dateToString': {
-                    'format': '%Y-%m-%d',
-                    'date': {
-                        '$toDate': '$date'
-                    }
-                }
-            },
-            "title": 1,
-            "url": 1
-        }
+      "$sort": {
+        "date": -1
+      }
     }, {
-        "$sort": {
-            "date": -1
-        }
-    }, {
-        "$facet": {
-            "total": [{
-                "$count": "count"
-            }],
-            "articles": [{
-                "$skip": skip
-            }, {
-                "$limit": int(fetch_count)
-            }]
-        }
+      "$facet": {
+        "total": [{
+          "$count": "count"
+        }],
+        "articles": [{
+          "$skip": skip
+        }, {
+          "$limit": int(fetch_count)
+        }]
+      }
     }])
 
     results = list(news_articles)[0]
