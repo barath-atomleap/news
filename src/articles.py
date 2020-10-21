@@ -231,8 +231,9 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
               article_id = str(article_id.upserted_id)
+              message = f'{page_url} added to DB.'
             else:
-              message = 'Article already exists'
+              message = f'{page_url} already exists.'
               article_id = str(
                 db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
@@ -244,14 +245,15 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
               product_request = requests.post(url, json=prod_data)
             except Exception as e:
               logging.error(f'Error getting product: {e}')
-              return {'title': title, 'content': content, 'message': 'Could not extract product info'}
+              return {'title': title, 'content': content, 'message': f'{message} Could not extract product info.'}
 
         if company_article_match_found:
-          return {'article_ids': article_id_list, 'title': title, 'content': content, 'message': message}
+          return {'article_ids': article_id_list, 'title': title, 'content': content,
+                  'message': f'Added {len(article_id_list)} company-article pairs to DB.'}
       except Exception as e:
         logging.error(f'Error: {e}')
         return {'title': title, 'content': content, 'message': f'Error: {e}'}
-    return {'message': message}
+    return {'message': f'Article content is empty for url={page_url}.'}
 
   except Exception as e:
     logging.error(f'Error: {e}')
@@ -312,3 +314,4 @@ def products_data(company_id, start_row, fetch_count):
   except Exception as e:
     logging.error(f'Error: {e}')
     return {}
+
