@@ -1,6 +1,7 @@
 import base64
 import requests
 import string
+from unidecode import unidecode
 from bson import ObjectId
 import datetime
 from delphai_backend_utils.db_access import get_own_db_connection
@@ -201,14 +202,11 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
 
         company_article_match_found = False  # at least one match
         article_id_list = list()  # all article company pairs
-        # make returned strings printable
-        printable = set(string.printable)  # TODO: use better approach for this
         # try to fill the news tabs of the companies in our DB with this new article
         for company in companies:
           if company_to_description_dict[company["_id"]] != "":
             company_article_match_found = True
-            printable_description = ''.join(
-              filter(lambda ch: ch in printable, company_to_description_dict[company["_id"]]))
+            printable_description = unidecode(company_to_description_dict[company["_id"]])
             data = {
               'title': title,
               'description': printable_description,
@@ -315,4 +313,5 @@ def products_data(company_id, start_row, fetch_count):
   except Exception as e:
     logging.error(f'Error: {e}')
     return {}
+
 
