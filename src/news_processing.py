@@ -126,9 +126,11 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
         :param best_matches: dict with matches between company mentions in the news to the companies in the db
         :return: list of company mentions with high confidence
         """
-    entities_to_keep = list()
-    entities_urls = list()
-    entities_ids = list()
+    company_mentions = list()
+    matched_companies = list()
+    urls = list()
+    company_ids = list()
+
     # find pairs of hard matches
     for mentioned_organization in best_matches:
       # TODO: check if there is more than one match with the exact name in the DB, like "Superior" and "Superior
@@ -138,14 +140,16 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
       id_in_db = best_matches[mentioned_organization]["best"]["id"]
       if hard_matching:
         if mentioned_organization == company_in_db:
-          entities_to_keep.append(company_in_db)
-          entities_urls.append(url_in_db)
-          entities_ids.append(id_in_db)
+          matched_companies.append(company_in_db)
+          company_mentions.append(mentioned_organization)
+          urls.append(url_in_db)
+          company_ids.append(id_in_db)
       else:
-        entities_to_keep.append(company_in_db)
-        entities_urls.append(url_in_db)
-        entities_ids.append(id_in_db)
-    return entities_to_keep, entities_urls, entities_ids
+        matched_companies.append(company_in_db)
+        company_mentions.append(mentioned_organization)
+        urls.append(url_in_db)
+        company_ids.append(id_in_db)
+    return matched_companies, urls, company_ids, company_mentions
 
   # clean nes
   terms = prepare_terms()
@@ -172,8 +176,8 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
           for r in ner_matching_response.get('results', [])
       }
       # get company names from dict
-      matched_names, matched_urls, matched_ids = get_names_of_matches(best_matches=ner_best_matches)
-      return matched_names, matched_urls, matched_ids
+      matched_names, matched_urls, matched_ids, company_mentions = get_names_of_matches(best_matches=ner_best_matches)
+      return matched_names, matched_urls, matched_ids, company_mentions
     except json.decoder.JSONDecodeError as e:
       logging.error(f'Error: from our NamesMatcher service: {e}')
   return None
