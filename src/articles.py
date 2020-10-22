@@ -90,34 +90,34 @@ def create_company_to_description_dict(companies: list, title: str, content: str
           company["_id"] = str(cmp["_id"])
         else:
           continue
-      company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
-                                                                                  content="{}. {}".format(
-                                                                                    title, content))
+      company_to_description_dict[company["_id"]] = get_company_info_from_article(
+        company_name=company["name"],
+        content="{}. {}".format(title, content))
   return company_to_description_dict
 
 
-def enrich_company_to_description_dict(company_to_description_dict: dict, companies: list, company_ids: list,
-                                       title: str, content: str):
+def enrich_company_to_description_dict(company_to_description_dict: dict, company_mentions:list,
+    company_ids: list, title: str, content: str):
   """
   Combine given companies and discovered companies in the company_desc dict.
   Args:
+    company_mentions: named entities that are discovered
     company_to_description_dict: the dict with the sentences that have company mentions
-    companies: named entities that are discovered
     company_ids: the company ids of the named entities in our DB
     title: news article title
     content: news article body
   Returns: updated company_to_description_dict
   """
   new_companies = list()
-  for idx, matched_ne in enumerate(companies):
+  for idx, company_mention in enumerate(company_mentions):
     if (len(company_to_description_dict) > 0 and not any(company_ids[idx] in d for d in company_to_description_dict)) \
             or \
             (len(company_to_description_dict) == 0):
       company_dict = dict()
       company_dict["_id"] = company_ids[idx]
-      company_dict["name"] = matched_ne
+      company_dict["name"] = company_mention
       company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(
-        company_name=matched_ne,
+        company_name=company_mention,
         content="{}. {}".format(
           title, content))
       new_companies.append(company_dict)
@@ -177,15 +177,15 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
           organization_names = [i[0] for i in nes]
 
           # match them to DB
-          matched_nes, matched_nes_urls, matched_nes_ids = match_nes_to_db_companies(
+          matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
             named_entities=organization_names,
             hard_matching=False)
 
           # save their descriptions
           new_companies, company_to_description_dict = enrich_company_to_description_dict(
             company_to_description_dict=company_to_description_dict,
-            companies=matched_nes,
-            company_ids=matched_nes_ids,
+            company_mentions=company_mentions,
+            company_ids=matched_ids,
             title=title,
             content=content)
 
@@ -249,6 +249,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
 
         if company_article_match_found:
           return {'article_ids': article_id_list, 'title': title, 'content': content,
+                  'description': printable_description,
                   'message': f'Added {len(article_id_list)} company-article pairs to DB.'}
       except Exception as e:
         logging.error(f'Error: {e}')
