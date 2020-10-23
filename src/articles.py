@@ -202,11 +202,13 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
 
         company_article_match_found = False  # at least one match
         article_id_list = list()  # all article company pairs
+        all_article_descriptions = list()
         # try to fill the news tabs of the companies in our DB with this new article
         for company in companies:
           if company_to_description_dict[company["_id"]] != "":
             company_article_match_found = True
             printable_description = unidecode(company_to_description_dict[company["_id"]])
+            all_article_descriptions.append(printable_description)
             data = {
               'title': title,
               'description': printable_description,
@@ -237,17 +239,19 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
 
             # calling products service
             try:
+              # TODO: move this outside the company iteration, it's the same for every company
               prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
               # prod_data = {'article_id': article_id, 'title': title, 'content': content}
               url = 'https://api.delphai.live/delphai.products.Products.add_products'
               product_request = requests.post(url, json=prod_data)
             except Exception as e:
-              logging.error(f'Error getting product: {e}')
+              logging.error(f'Error getting product information: {e}')
+              # TODO: continue to the next company, return the articles that were added without product information
               return {'title': title, 'content': content, 'message': f'{message} Could not extract product info.'}
 
         if company_article_match_found:
           return {'article_ids': article_id_list, 'title': title, 'content': content,
-                  'description': printable_description,
+                  'descriptions': all_article_descriptions,
                   'message': f'Added {len(article_id_list)} company-article pairs to DB.'}
       except Exception as e:
         logging.error(f'Error: {e}')
