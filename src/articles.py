@@ -125,7 +125,7 @@ def enrich_company_to_description_dict(company_to_description_dict: dict, compan
   return new_companies, company_to_description_dict
 
 
-def save_articles(companies: list, page_url: str, html: str, test_mode: bool, date: str = ''):
+def save_article(companies: list, page_url: str, html: str, test_mode: bool, date: str = ''):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -174,23 +174,28 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
         nes = get_company_nes_from_article(article="{}. {}".format(title, content))
         # if ner service didn't return an empty reponse and if article has entities
         if nes is not None:
-          # get company names
+          # get organization names
           organization_names = [i[0] for i in nes]
+          logging.info("Named entities={}, organizations={}".format(nes, organization_names))
 
           # match them to DB
           matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
             named_entities=organization_names,
             hard_matching=False)
+          logging.info("Linked company names={} with urls={}".format(matched_companies, matched_urls))
 
-          # save their descriptions
-          new_companies, company_to_description_dict = enrich_company_to_description_dict(
-            company_to_description_dict=company_to_description_dict,
-            company_mentions=company_mentions,
-            company_ids=matched_ids,
-            title=title,
-            content=content)
-
-          companies = companies + new_companies
+          if matched_companies and matched_urls and matched_ids and company_mentions:
+            # save their article descriptions
+            new_companies, company_to_description_dict = enrich_company_to_description_dict(
+              company_to_description_dict=company_to_description_dict,
+              company_mentions=company_mentions,
+              company_ids=matched_ids,
+              title=title,
+              content=content)
+            # include them in `companies` and the company-article pairs later on in the DB
+            companies = companies + new_companies
+          else:
+            logging.warning(f'Warning: No companies linked to our DB')
 
         # save data
         if companies:
@@ -203,6 +208,7 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
         company_article_match_found = False  # at least one match
         article_id_list = list()  # all article company pairs
         all_article_descriptions = list()
+        all_product_article_descriptions = list()
         # try to fill the news tabs of the companies in our DB with this new article
         for company in companies:
           if company_to_description_dict[company["_id"]] != "":
@@ -241,17 +247,23 @@ def save_articles(companies: list, page_url: str, html: str, test_mode: bool, da
             try:
               # TODO: move this outside the company iteration, it's the same for every company
               prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
-              # prod_data = {'article_id': article_id, 'title': title, 'content': content}
               url = 'https://api.delphai.live/delphai.products.Products.add_products'
               product_request = requests.post(url, json=prod_data)
+              # if product_request:
+              #   all_product_article_descriptions.append(product_request.text)
+              # else:
+              #   all_product_article_descriptions.append("")
+              #   logging.info("Product detection model returned no text")
             except Exception as e:
               logging.error(f'Error getting product information: {e}')
-              # TODO: continue to the next company, return the articles that were added without product information
-              return {'title': title, 'content': content, 'message': f'{message} Could not extract product info.'}
+              continue
 
         if company_article_match_found:
-          return {'article_ids': article_id_list, 'title': title, 'content': content,
+          return {'article_ids': article_id_list,
+                  'title': title,
+                  'content': content,
                   'descriptions': all_article_descriptions,
+                  'product_descriptions': all_product_article_descriptions,
                   'message': f'Added {len(article_id_list)} company-article pairs to DB.'}
       except Exception as e:
         logging.error(f'Error: {e}')
@@ -317,5 +329,3 @@ def products_data(company_id, start_row, fetch_count):
   except Exception as e:
     logging.error(f'Error: {e}')
     return {}
-
-
