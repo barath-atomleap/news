@@ -119,8 +119,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
      have exactly the same name
     :param named_entities: list of organizations discovered in the text
     """
-  def get_names_of_matches(best_matches: dict):  # TODO: return named entity and matched entity to search for both in
-    # the text
+  def get_names_of_matches(best_matches: dict):
     """
         Get company names from the response of the name macther
         :param best_matches: dict with matches between company mentions in the news to the companies in the db
@@ -163,7 +162,9 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   # match nes to DB
   for i in range(0, post_retry_times):
     try:
-      ner_matching_response = requests.post('https://api.delphai.live/delphai.namesmatcher.NamesMatcher.match',
+      logging.info("Name matcher input: {}".format(all_entities))
+      ner_matching_response = requests.post(
+        'https://api.delphai.blue/names-matcher/delphai.namesmatcher.NamesMatcher.match',
                                             json={
                                                 'names': all_entities
                                             }).json()
@@ -175,9 +176,13 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
           }
           for r in ner_matching_response.get('results', [])
       }
-      # get company names from dict
-      matched_names, matched_urls, matched_ids, company_mentions = get_names_of_matches(best_matches=ner_best_matches)
-      return matched_names, matched_urls, matched_ids, company_mentions
+      logging.info("Name matcher result: {}".format(ner_best_matches))
+      if ner_best_matches:
+        # get company names from dict
+        matched_names, matched_urls, matched_ids, company_mentions = get_names_of_matches(best_matches=ner_best_matches)
+        if matched_names:
+          return matched_names, matched_urls, matched_ids, company_mentions
+      return None, None, None, None
     except json.decoder.JSONDecodeError as e:
       logging.error(f'Error: from our NamesMatcher service: {e}')
-  return None
+  return None, None, None, None
