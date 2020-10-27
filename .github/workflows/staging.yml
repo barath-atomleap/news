@@ -38,14 +38,14 @@ jobs:
     - uses: rlespinasse/github-slug-action@master
     - uses: delphai/delphai-kubernetes-deployment@master
       with:
-        client_id: ${ secrets.ARM_CLIENT_ID_STAGING }}
-        client_secret: ${ secrets.ARM_CLIENT_SECRET_STAGING }}
+        client_id: ${{ secrets.ARM_CLIENT_ID_STAGING }}
+        client_secret: ${{ secrets.ARM_CLIENT_SECRET_STAGING }}
         delphai_enviroment: staging
         grpcport: 8080
         httpport: 7070
         image_sha: ${{ env.IMAGE_SHA }}
         is_ui: false
-        tenant_id: ${ secrets.ARM_TENANT_ID_STAGING }}
+        tenant_id: ${{ secrets.ARM_TENANT_ID_STAGING }}
 name: staging
 'on':
   push:
