@@ -14,7 +14,7 @@ jobs:
         registry: ${{ secrets.ACR_REGISTRY_REVIEW }}
         tag: ${{ env.GITHUB_REF_SLUG }}
         username: ${{ secrets.ACR_USERNAME_REVIEW }}
-    - run: docker inspect --format='{{index .RepoDigests 0}}' delphaicommon.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
+    - run: docker inspect --format='{{index .RepoDigests 0}}' delphaireview.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
         > image_sha.txt
     - uses: actions/upload-artifact@v1
       with:
