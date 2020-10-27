@@ -38,14 +38,14 @@ jobs:
     - uses: rlespinasse/github-slug-action@master
     - uses: delphai/delphai-kubernetes-deployment@master
       with:
-        client_id: ${ secrets.ARM_CLIENT_ID_REVIEW }}
-        client_secret: ${ secrets.ARM_CLIENT_SECRET_REVIEW }}
+        client_id: ${{ secrets.ARM_CLIENT_ID_REVIEW }}
+        client_secret: ${{ secrets.ARM_CLIENT_SECRET_REVIEW }}
         delphai_enviroment: review
         grpcport: 8080
         httpport: 7070
         image_sha: ${{ env.IMAGE_SHA }}
         is_ui: false
-        tenant_id: ${ secrets.ARM_TENANT_ID_REVIEW }}
+        tenant_id: ${{ secrets.ARM_TENANT_ID_REVIEW }}
 name: review
 'on':
   push:
