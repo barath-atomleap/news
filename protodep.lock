@@ -1,0 +1,14 @@
+proto_outdir = "./.vendor"
+
+[[dependencies]]
+  target = "github.com/envoyproxy/protoc-gen-validate"
+  revision = "ec9cd95372b9630aafba2cb4a0e448c43768e0df"
+  branch = "master"
+  path = ""
+  ignores = ["./java", "./tests"]
+
+[[dependencies]]
+  target = "github.com/googleapis/api-common-protos"
+  revision = "0fcae75a2c20a140137e3a9c48a87d15ceffabd7"
+  branch = "master"
+  path = ""

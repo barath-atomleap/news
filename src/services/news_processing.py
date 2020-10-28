@@ -1,4 +1,6 @@
+from delphai_utils.formatting import clean_url
 import trafilatura
+from bson import ObjectId
 from cleantext import clean
 from cleanco import prepare_terms, basename
 import base64
@@ -7,7 +9,8 @@ import nltk
 from fuzzywuzzy import fuzz
 import json
 import requests
-import logging
+from delphai_utils.logging import logging
+from delphai_utils.db import db_sync as db
 
 nltk.download('punkt')
 
@@ -164,10 +167,10 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     try:
       logging.info("Name matcher input: {}".format(all_entities))
       ner_matching_response = requests.post(
-        'https://api.delphai.blue/names-matcher/delphai.namesmatcher.NamesMatcher.match',
-                                            json={
-                                                'names': all_entities
-                                            }).json()
+          'https://api.delphai.blue/names-matcher/delphai.namesmatcher.NamesMatcher.match',
+          json={
+              'names': all_entities
+          }).json()
       # add name matching results to dict and filter them
       ner_best_matches = {
           r['name']: {
@@ -186,3 +189,58 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     except json.decoder.JSONDecodeError as e:
       logging.error(f'Error: from our NamesMatcher service: {e}')
   return None, None, None, None
+
+
+def create_company_to_description_dict(companies: list, title: str, content: str):
+  """
+  Save the descriptions of the `companies` the way they are discussed in the article text. A description in
+  this case is the text displayed in delphai under a url in the news tab.
+  Args:
+     companies: list of input companies to the service
+     title: news article title
+     content: news article body
+  Returns: dict with keys the company ids and values the sentences that mention these companies in the text
+  """
+
+  company_to_description_dict = dict()
+  if companies:
+    for company in companies:
+      try:
+        company["_id"] = str(ObjectId(company["company"]))
+      except:  # if "company" is not ObjectId, search for url
+        cmp = db.companies.find_one({'url': clean_url(company["company"])})
+        if cmp:
+          company["_id"] = str(cmp["_id"])
+        else:
+          continue
+      company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
+                                                                                  content="{}. {}".format(
+                                                                                      title, content))
+  return company_to_description_dict
+
+
+def enrich_company_to_description_dict(company_to_description_dict: dict, company_mentions: list, company_ids: list,
+                                       title: str, content: str):
+  """
+  Combine given companies and discovered companies in the company_desc dict.
+  Args:
+    company_mentions: named entities that are discovered
+    company_to_description_dict: the dict with the sentences that have company mentions
+    company_ids: the company ids of the named entities in our DB
+    title: news article title
+    content: news article body
+  Returns: updated company_to_description_dict
+  """
+  new_companies = list()
+  for idx, company_mention in enumerate(company_mentions):
+    if (len(company_to_description_dict) > 0 and not any(company_ids[idx] in d for d in company_to_description_dict)) \
+            or \
+            (len(company_to_description_dict) == 0):
+      company_dict = dict()
+      company_dict["_id"] = company_ids[idx]
+      company_dict["name"] = company_mention
+      company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
+                                                                                       content="{}. {}".format(
+                                                                                           title, content))
+      new_companies.append(company_dict)
+  return new_companies, company_to_description_dict

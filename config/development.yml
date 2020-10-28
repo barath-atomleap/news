@@ -18,7 +18,7 @@ logging:
         - default
 
 database:
-  connection_string: ${kube:do-db-credentials/connection-string}
+  connection_string: ${env:DB_CONNECTION}
   name: main
 
 server:

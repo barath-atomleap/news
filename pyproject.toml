@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "news"
+version = "0.1.0"
+description = "news microservice"
+authors = ["leofj <leonardo@delphai.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+delphai-utils = {extras = ["config", "database", "grpc"], version = "^0.1.45"}
+grpcio = "*"
+grpcio-tools = "*"
+pymongo = "*"
+grpcio-reflection = "*"
+azure-storage-blob = "*"
+schematics = "*"
+trafilatura = "*"
+cleantext = "*"
+cython = "*"
+fuzzywuzzy = "*"
+nltk = "*"
+python-levenshtein = "0.12.0"
+cleanco = "*"
+unidecode = "*"
+
+[tool.poetry.dev-dependencies]
+yapf = "*"
+flake8 = "*"
+pep8-naming = "*"
+pytest = "*"
+poethepoet = "^0.9.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+[tool.poe.tasks]
+start = "python src/server.py"
+codegen = [
+  {cmd = "mkdir -p ./src"},
+  {cmd = "protodep up --force"},
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"}, 
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --python_out=./src/proto ./.vendor/**/*.proto"}
+]
+swaggergen = [
+  {cmd = "protoc -I./.vendor -I. --swagger_out . ./proto/*.proto"},
+  {cmd = "mv ./proto/*.swagger.json ."}
+]

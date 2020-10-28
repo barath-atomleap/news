@@ -1,9 +1,9 @@
 import logging
 import requests
-import cld3
+# import cld3
 from azure.storage.blob import BlobServiceClient
-from delphai_backend_utils.config import get_config
-from googletrans import Translator
+from delphai_utils.config import get_config
+# from googletrans import Translator
 
 
 def save_blob(url, text):
@@ -33,7 +33,9 @@ def is_text_in_english(text: str):
   # if str(language[0]) == "en":
 
   response = requests.post("https://api.delphai.blue/translation/delphai.Translation.detect_language",
-                           json={"text": text}).json()
+                           json={
+                               "text": text
+                           }).json()
   if response["language"] == "en":
     return True
   else:
@@ -48,7 +50,8 @@ def translate_to_english(text: str):
     """
   # translator = Translator()
   # translated_text = translator.translate(text, dest="en")
-  response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate",
-                           json={"text": text}).json()
+  response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate", json={
+      "text": text
+  }).json()
   # return translated_text.text
   return response["translation"]
