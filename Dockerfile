@@ -12,7 +12,7 @@ COPY pyproject.toml protodep.toml protodep.lock /app/
 COPY ./proto /app/proto
 RUN poetry install
 RUN mkdir -p /root/.ssh
-RUN echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa
+RUN echo "${SSH_PRIVATE_KEY}" | base64 -d > /root/.ssh/id_rsa
 RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 RUN poetry run poe codegen
