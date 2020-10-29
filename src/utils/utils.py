@@ -1,4 +1,4 @@
-import logging
+from delphai_utils.logging import logging
 import requests
 # import cld3
 from azure.storage.blob import BlobServiceClient
@@ -15,7 +15,7 @@ def save_blob(url, text):
     # Create a blob client using the local file name as the name for the blob
     blob_client = blob_service_client.get_blob_client(container=blob_storage['container'], blob=url)
 
-    print("\nUploading to Azure Storage as blob:\n\t" + url)
+    logging.info("Uploading to Azure Storage as blob:\t" + url)
 
     # Upload the created file
     blob_client.upload_blob(text)
