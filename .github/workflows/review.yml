@@ -13,6 +13,7 @@ jobs:
         password: ${{ secrets.ACR_PASSWORD_REVIEW }}
         registry: ${{ secrets.ACR_REGISTRY_REVIEW }}
         tag: ${{ env.GITHUB_REF_SLUG }}
+        buildArgs: 'SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}'
         username: ${{ secrets.ACR_USERNAME_REVIEW }}
     - run: docker inspect --format='{{index .RepoDigests 0}}' delphaireview.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
         > image_sha.txt

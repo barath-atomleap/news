@@ -1,5 +1,6 @@
 # migrate grpc service
 FROM python:3.8 as build
+ARG SSH_PRIVATE_KEY
 WORKDIR /app
 ENV PATH /root/.poetry/bin:$PATH
 RUN apt update && apt install -y curl
@@ -10,6 +11,10 @@ ENV PATH /root/.poetry/bin:$PATH
 COPY pyproject.toml protodep.toml protodep.lock /app/
 COPY ./proto /app/proto
 RUN poetry install
+RUN mkdir -p /root/.ssh
+RUN echo "${SSH_PRIVATE_KEY}" | base64 -d > /root/.ssh/id_rsa
+RUN touch /root/.ssh/known_hosts
+RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 RUN poetry run poe codegen
 COPY ./proto /app/proto
 RUN true

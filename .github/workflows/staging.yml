@@ -13,6 +13,7 @@ jobs:
         password: ${{ secrets.ACR_PASSWORD_STAGING }}
         registry: ${{ secrets.ACR_REGISTRY_STAGING }}
         tag: ${{ env.GITHUB_REF_SLUG }}
+        buildArgs: 'SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}'
         username: ${{ secrets.ACR_USERNAME_STAGING }}
     - run: docker inspect --format='{{index .RepoDigests 0}}' delphaistaging.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
         > image_sha.txt
