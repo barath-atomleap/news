@@ -1,9 +1,9 @@
 from delphai_utils.logging import logging
 import requests
-# import cld3
+import cld3
 from azure.storage.blob import BlobServiceClient
 from delphai_utils.config import get_config
-# from googletrans import Translator
+from googletrans import Translator
 
 
 def save_blob(url, text):
@@ -29,17 +29,23 @@ def is_text_in_english(text: str):
     Detects the language of a given text and determines whether it is in English or not.
     :return: bool for whether text is in English or not
     """
-  # language = cld3.get_language(text)
-  # if str(language[0]) == "en":
 
-  response = requests.post("https://api.delphai.blue/translation/delphai.Translation.detect_language",
-                           json={
-                               "text": text
-                           }).json()
-  if response["language"] == "en":
-    return True
-  else:
-    return False
+  try:
+    response = requests.post("https://api.delphai.blue/translation/delphai.Translation.detect_language",
+                             json={
+                                 "text": text
+                             }).json()
+    if response["language"] == "en":
+      return True
+    else:
+      return False
+  except Exception as e:
+    logging.warning(f'lang detect failed: {e}')
+    language = cld3.get_language(text)
+    if str(language[0]) == "en":
+      return True
+    else:
+      return False
 
 
 def translate_to_english(text: str):
@@ -48,10 +54,15 @@ def translate_to_english(text: str):
     :param text: article text (str)
     :return: translated text (str)
     """
-  # translator = Translator()
-  # translated_text = translator.translate(text, dest="en")
-  response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate", json={
-      "text": text
-  }).json()
-  # return translated_text.text
-  return response["translation"]
+
+  try:
+    response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate", json={
+        "text": text
+    }).json()
+
+    return response["translation"]
+  except Exception as e:
+    logging.warning(f'translation service failed: {e}')
+    translator = Translator()
+    translated_text = translator.translate(text, dest="en")
+    return translated_text.text

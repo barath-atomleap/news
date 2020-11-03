@@ -110,6 +110,7 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
           is_translated = True
 
         # find sentences with company mentions
+        companies = [{'company': companies.company, 'name': companies.name}]
         company_to_description_dict = create_company_to_description_dict(companies=companies,
                                                                          title=title,
                                                                          content=content)

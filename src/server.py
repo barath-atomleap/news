@@ -16,8 +16,7 @@ class News(service_pb2_grpc.News):
     return service_pb2.ArticlesResponse(articles=articles.get('articles', []), total_articles=articles.get('total', 0))
 
   async def add_articles(self, request, context):
-    article = save_article(request.get('companies'), request.get('url'), request.get('html'), request.get('test_mode'),
-                           request.get('date'))
+    article = save_article(request.companies, request.url, request.html, request.test_mode, request.date)
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
                                            content=article.get('content', ''),

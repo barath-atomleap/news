@@ -21,6 +21,8 @@ nltk = "*"
 python-levenshtein = "0.12.0"
 cleanco = "*"
 unidecode = "*"
+pycld3 = "0.20"
+googletrans = "3.0.0"
 
 [tool.poetry.dev-dependencies]
 yapf = "*"

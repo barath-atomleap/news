@@ -39,7 +39,7 @@ message AddArticlesRequest {
     string company = 1;
     string name = 2;
   }
-  repeated Company companies = 1;
+  Company companies = 1;
   string url = 2;
   string html = 3;
   bool test_mode = 4;
