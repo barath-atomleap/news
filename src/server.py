@@ -1,10 +1,10 @@
 import sys
+sys.path.append('./src/proto')
 
 from delphai_utils.grpc_server import create_grpc_server, start_server
 import proto.news_pb2 as service_pb2
 import proto.news_pb2_grpc as service_pb2_grpc
 from services.articles import articles_data, save_article, products_data
-sys.path.append('./src/proto')
 
 
 class News(service_pb2_grpc.News):
