@@ -101,6 +101,7 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
         html_ref = ''
         content_ref = ''
         is_translated = False
+        unmatched_companies = False
 
         # translate text if necessary
         if not is_text_in_english(title):
@@ -115,31 +116,35 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
                                                                          title=title,
                                                                          content=content)
 
-        # get named entities
-        nes = get_company_nes_from_article(article="{}. {}".format(title, content))
-        # if ner service didn't return an empty reponse and if article has entities
-        if nes is not None:
-          # get organization names
-          organization_names = [i[0] for i in nes]
-          logging.info("Named entities={}, organizations={}".format(nes, organization_names))
+        try:
+          # get named entities
+          nes = get_company_nes_from_article(article="{}. {}".format(title, content))
+          # if ner service didn't return an empty reponse and if article has entities
+          if nes is not None:
+            # get organization names
+            organization_names = [i[0] for i in nes]
+            logging.info("Named entities={}, organizations={}".format(nes, organization_names))
 
-          # match them to DB
-          matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
-              named_entities=organization_names, hard_matching=False)
-          logging.info("Linked company names={} with urls={}".format(matched_companies, matched_urls))
+            # match them to DB
+            matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
+                named_entities=organization_names, hard_matching=False)
+            logging.info("Linked company names={} with urls={}".format(matched_companies, matched_urls))
 
-          if matched_companies and matched_urls and matched_ids and company_mentions:
-            # save their article descriptions
-            new_companies, company_to_description_dict = enrich_company_to_description_dict(
-                company_to_description_dict=company_to_description_dict,
-                company_mentions=company_mentions,
-                company_ids=matched_ids,
-                title=title,
-                content=content)
-            # include them in `companies` and the company-article pairs later on in the DB
-            companies = companies + new_companies
-          else:
-            logging.warning('Warning: No companies linked to our DB')
+            if matched_companies and matched_urls and matched_ids and company_mentions:
+              # save their article descriptions
+              new_companies, company_to_description_dict = enrich_company_to_description_dict(
+                  company_to_description_dict=company_to_description_dict,
+                  company_mentions=company_mentions,
+                  company_ids=matched_ids,
+                  title=title,
+                  content=content)
+              # include them in `companies` and the company-article pairs later on in the DB
+              companies = companies + new_companies
+              unmatched_companies = [com for com in organization_names if com not in companies]
+            else:
+              logging.warning('Warning: No companies linked to our DB')
+        except Exception as e:
+          logging.error(f'Error getting named entities: {e}')
 
         # save data
         if companies:
@@ -155,7 +160,7 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
         all_product_article_descriptions = list()
         # try to fill the news tabs of the companies in our DB with this new article
         for company in companies:
-          if company_to_description_dict[company["_id"]] != "":
+          if company_to_description_dict[company["_id"]]:
             company_article_match_found = True
             printable_description = unidecode(company_to_description_dict[company["_id"]])
             all_article_descriptions.append(printable_description)
@@ -177,7 +182,6 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
             }, {'$set': data},
                                             upsert=True)
 
-            article_id = db.news.insert_one(data)
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
               article_id = str(article_id.upserted_id)
@@ -200,6 +204,20 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
             except Exception as e:
               logging.error(f'Error getting product information: {e}')
               continue
+
+        if unmatched_companies:
+          data = {
+              'title': title,
+              'companies': unmatched_companies,
+              'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
+          }
+          if is_translated:
+            data['is_translated'] = is_translated
+          if content_ref:
+            data['content_ref'] = content_ref
+          if html_ref:
+            data['html_ref'] = html_ref
+          db.news_unmatched.update_one({'url': page_url}, {'$set': data}, upsert=True)
 
         if company_article_match_found:
           return {
