@@ -6,14 +6,14 @@ jobs:
     - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk
         -F / '{print $2}' | sed -e "s/:refs//")
       shell: bash
-    - uses: rlespinasse/github-slug-action@master
+    - uses: rlespinasse/github-slug-action@v3.x
     - uses: mr-smithers-excellent/docker-build-push@v3
       with:
+        buildArgs: SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}
         image: ${{ env.REPOSITORY_NAME }}
         password: ${{ secrets.ACR_PASSWORD_REVIEW }}
         registry: ${{ secrets.ACR_REGISTRY_REVIEW }}
         tag: ${{ env.GITHUB_REF_SLUG }}
-        buildArgs: 'SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}'
         username: ${{ secrets.ACR_USERNAME_REVIEW }}
     - run: docker inspect --format='{{index .RepoDigests 0}}' delphaireview.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
         > image_sha.txt
@@ -36,7 +36,7 @@ jobs:
     - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk
         -F / '{print $2}' | sed -e "s/:refs//")
       shell: bash
-    - uses: rlespinasse/github-slug-action@master
+    - uses: rlespinasse/github-slug-action@v3.x
     - uses: delphai/delphai-kubernetes-deployment@master
       with:
         client_id: ${{ secrets.ARM_CLIENT_ID_REVIEW }}
