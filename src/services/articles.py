@@ -3,6 +3,7 @@ import requests
 from unidecode import unidecode
 from bson import ObjectId
 import datetime
+from google.protobuf.json_format import MessageToDict
 from delphai_utils.formatting import clean_url
 from utils.utils import save_blob, is_text_in_english, translate_to_english
 from delphai_utils.logging import logging
@@ -111,7 +112,8 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
           is_translated = True
 
         # find sentences with company mentions
-        companies = [{'company': companies.company, 'name': companies.name}]
+        companies = MessageToDict(companies)
+        # companies = [{'company': companies.company, 'name': companies.name}]
         company_to_description_dict = create_company_to_description_dict(companies=companies,
                                                                          title=title,
                                                                          content=content)
