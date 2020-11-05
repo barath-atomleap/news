@@ -3,7 +3,7 @@ import sys
 from delphai_utils.grpc_server import create_grpc_server, start_server
 import proto.news_pb2 as service_pb2
 import proto.news_pb2_grpc as service_pb2_grpc
-from services.articles import articles_data, save_article, products_data
+from services.articles import articles_data, save_article
 sys.path.append('./src/proto')
 
 
@@ -21,13 +21,6 @@ class News(service_pb2_grpc.News):
                                            title=article.get('title', ''),
                                            content=article.get('content', ''),
                                            message=article.get('message', ''))
-
-  async def get_products(self, request, context):
-    company_id = request.company_id
-    start_row = request.start_row
-    fetch_count = request.fetch_count
-    articles = products_data(company_id, start_row, fetch_count)
-    return service_pb2.ArticlesResponse(articles=articles.get('articles', []), total_articles=articles.get('total', 0))
 
 
 if __name__ == "__main__":

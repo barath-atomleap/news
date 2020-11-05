@@ -193,7 +193,7 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
             # calling products service
             try:
               # TODO: move this outside the company iteration, it's the same for every company
-              prod_data = {'article_id': str(article_id.inserted_id), 'title': title, 'content': content}
+              prod_data = {'article_id': str(article_id), 'title': title, 'content': content}
               url = 'https://api.delphai.live/delphai.products.Products.add_products'
               product_request = requests.post(url, json=prod_data)
               # if product_request:
@@ -236,59 +236,3 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
   except Exception as e:
     logging.error(f'Error: {e}')
     return {'message': f'Error: {e}'}
-
-
-def products_data(company_id, start_row, fetch_count):
-  try:
-    logging.info(f'Retrieving products for {company_id} page {start_row}')
-
-    skip = (start_row - 1) * fetch_count
-
-    news_articles = news.aggregate([{
-        "$match": {
-            "company_id": ObjectId(company_id),
-            "prod_desc": {
-                '$exists': 1
-            }
-        }
-    }, {
-        "$project": {
-            "_id": 0,
-            "description": '$prod_desc',
-            "mentions": '$prod_mentions',
-            "is_translated": 1,
-            "date": {
-                '$dateToString': {
-                    'format': '%Y-%m-%d',
-                    'date': {
-                        '$toDate': '$date'
-                    }
-                }
-            },
-            "title": 1,
-            "url": 1
-        }
-    }, {
-        "$sort": {
-            "date": -1
-        }
-    }, {
-        "$facet": {
-            "total": [{
-                "$count": "count"
-            }],
-            "articles": [{
-                "$skip": skip
-            }, {
-                "$limit": int(fetch_count)
-            }]
-        }
-    }])
-
-    results = list(news_articles)[0]
-    results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
-
-    return results
-  except Exception as e:
-    logging.error(f'Error: {e}')
-    return {}

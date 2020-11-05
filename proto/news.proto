@@ -11,7 +11,6 @@ service News {
     option(google.api.http) = {get : "/{company_id}"};
   }
   rpc add_articles(AddArticlesRequest) returns(AddArticlesResponse) {}
-  rpc get_products(ArticlesRequest) returns(ArticlesResponse) {}
 }
 
 message ArticlesRequest {
