@@ -3,7 +3,6 @@ import requests
 from unidecode import unidecode
 from bson import ObjectId
 import datetime
-from google.protobuf.json_format import MessageToDict
 from delphai_utils.formatting import clean_url
 from utils.utils import save_blob, is_text_in_english, translate_to_english
 from delphai_utils.logging import logging
@@ -69,7 +68,12 @@ def articles_data(company_id, start_row, fetch_count):
     return {}
 
 
-def save_article(companies: list, page_url: str, html: str, test_mode: bool, date: str = ''):
+def save_article(companies: list,
+                 page_url: str,
+                 html: str,
+                 test_mode: bool,
+                 date: str = '',
+                 get_named_entities: bool = False):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -81,6 +85,7 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
       html: html content of the article
       test_mode: return results instead of saving
       date: string with article date (optional)
+      get_named_entities: tries to recognize entities automatically
   Returns: article ids in DB
   """
   try:
@@ -112,15 +117,13 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
           is_translated = True
 
         # find sentences with company mentions
-        companies = MessageToDict(companies)
-        # companies = [{'company': companies.company, 'name': companies.name}]
         company_to_description_dict = create_company_to_description_dict(companies=companies,
                                                                          title=title,
                                                                          content=content)
 
         try:
           # get named entities
-          nes = get_company_nes_from_article(article="{}. {}".format(title, content))
+          nes = get_company_nes_from_article(article="{}. {}".format(title, content)) if get_named_entities else None
           # if ner service didn't return an empty reponse and if article has entities
           if nes is not None:
             # get organization names
@@ -210,7 +213,7 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
         if unmatched_companies:
           data = {
               'title': title,
-              'companies': unmatched_companies,
+              'companies': list(set(unmatched_companies)),
               'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
           }
           if is_translated:
@@ -233,7 +236,11 @@ def save_article(companies: list, page_url: str, html: str, test_mode: bool, dat
       except Exception as e:
         logging.error(f'Error: {e}')
         return {'title': title, 'content': content, 'message': f'Error: {e}'}
-    return {'message': f'Article content is empty for url={page_url}.'}
+    if title is None or content is None:
+      message = f'Article content is empty for url={page_url}.'
+    else:
+      message = f'No date found for url={page_url}.'
+    return {'message': message}
 
   except Exception as e:
     logging.error(f'Error: {e}')

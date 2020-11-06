@@ -61,6 +61,8 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     if page_metadata is not None:
       try:
         article_publication_date = page_metadata["date"]
+        if not article_publication_date:
+          article_publication_date = date if date else None
       except Exception as e:
         logging.error(f'no date found for {url}:', e)
         article_publication_date = date if date else None
