@@ -98,6 +98,7 @@ def save_article(companies: list,
     title, content, date = news_boilerplater(html=html, url=page_url, date=date)
     logging.info(f'title: {title}')
     logging.info(f'content: {content}')
+    logging.info(f'date: {date}')
     if test_mode:
       return {'title': title, 'content': content}
 

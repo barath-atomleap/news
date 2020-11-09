@@ -55,6 +55,8 @@ def translate_to_english(text: str):
     :return: translated text (str)
     """
 
+  retry_count = 15
+  english_text = None
   try:
     response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate", json={
         "text": text
@@ -63,6 +65,12 @@ def translate_to_english(text: str):
     return response["translation"]
   except Exception as e:
     logging.warning(f'translation service failed: {e}')
-    translator = Translator()
-    translated_text = translator.translate(text, dest="en")
-    return translated_text.text
+    for i in range(0, retry_count, 1):
+      try:
+        translator = Translator()
+        translated_text = translator.translate(text, dest="en")
+        english_text = translated_text.text
+        return english_text
+      except AttributeError as e:
+        logging.error(f'Error translating with google trans: {e}. Text = {text[:100]}. Retry {i}')
+    return english_text
