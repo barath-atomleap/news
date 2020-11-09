@@ -72,8 +72,11 @@ def save_article(companies: list,
                  page_url: str,
                  html: str,
                  test_mode: bool,
+                 source: str,
                  date: str = '',
-                 get_named_entities: bool = False):
+                 get_named_entities: bool = False,
+                 no_products: bool = False,
+                 financial: bool = False):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -84,8 +87,11 @@ def save_article(companies: list,
       page_url: url of the article
       html: html content of the article
       test_mode: return results instead of saving
+      source: source of the article
       date: string with article date (optional)
       get_named_entities: tries to recognize entities automatically
+      no_products: skip products detection
+      financial: it's financial article
   Returns: article ids in DB
   """
   try:
@@ -182,6 +188,10 @@ def save_article(companies: list,
               data['content_ref'] = content_ref
             if html_ref:
               data['html_ref'] = html_ref
+            if source:
+              data['source'] = source
+            if financial:
+              data['financial'] = True
             article_id = db.news.update_one({
                 'company_id': ObjectId(company['_id']),
                 'url': page_url
@@ -197,19 +207,20 @@ def save_article(companies: list,
               article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
             # calling products service
-            try:
-              # TODO: move this outside the company iteration, it's the same for every company
-              prod_data = {'article_id': str(article_id), 'title': title, 'content': content}
-              url = 'https://api.delphai.live/delphai.products.Products.add_products'
-              product_request = requests.post(url, json=prod_data)
-              # if product_request:
-              #   all_product_article_descriptions.append(product_request.text)
-              # else:
-              #   all_product_article_descriptions.append("")
-              #   logging.info("Product detection model returned no text")
-            except Exception as e:
-              logging.error(f'Error getting product information: {e}')
-              continue
+            if not no_products:
+              try:
+                # TODO: move this outside the company iteration, it's the same for every company
+                prod_data = {'article_id': str(article_id), 'title': title, 'content': content}
+                url = 'https://api.delphai.live/delphai.products.Products.add_products'
+                product_request = requests.post(url, json=prod_data)
+                # if product_request:
+                #   all_product_article_descriptions.append(product_request.text)
+                # else:
+                #   all_product_article_descriptions.append("")
+                #   logging.info("Product detection model returned no text")
+              except Exception as e:
+                logging.error(f'Error getting product information: {e}')
+                continue
 
         if unmatched_companies:
           data = {

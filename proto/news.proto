@@ -44,6 +44,9 @@ message AddArticlesRequest {
   bool test_mode = 4;
   string date = 5;
   bool get_named_entities = 6;
+  bool no_products = 7;
+  string source = 8;
+  bool financial = 9;
 }
 
 message AddArticlesResponse {
