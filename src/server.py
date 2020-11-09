@@ -26,7 +26,7 @@ class News(service_pb2_grpc.News):
         request_dict.get('date'),
         request_dict.get('get_named_entities'),
         request_dict.get('no_products'),
-        request_dict.get('financial'),
+        request_dict.get('topic'),
     )
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),

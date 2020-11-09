@@ -76,7 +76,7 @@ def save_article(companies: list,
                  date: str = '',
                  get_named_entities: bool = False,
                  no_products: bool = False,
-                 financial: bool = False):
+                 topic: str = ''):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -91,7 +91,7 @@ def save_article(companies: list,
       date: string with article date (optional)
       get_named_entities: tries to recognize entities automatically
       no_products: skip products detection
-      financial: it's financial article
+      topic: topic of the article
   Returns: article ids in DB
   """
   try:
@@ -190,8 +190,8 @@ def save_article(companies: list,
               data['html_ref'] = html_ref
             if source:
               data['source'] = source
-            if financial:
-              data['financial'] = True
+            if topic:
+              data['topic'] = topic
             article_id = db.news.update_one({
                 'company_id': ObjectId(company['_id']),
                 'url': page_url

@@ -46,7 +46,7 @@ message AddArticlesRequest {
   bool get_named_entities = 6;
   bool no_products = 7;
   string source = 8;
-  bool financial = 9;
+  string topic = 9;
 }
 
 message AddArticlesResponse {
