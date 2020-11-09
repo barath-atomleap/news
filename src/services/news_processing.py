@@ -101,8 +101,8 @@ def get_company_nes_from_article(article: str):
   :param article: body of news article
   :return: dictionary with organizations discovered by spacy
   """
-  scoring_uri = 'http://51.145.149.205:80/api/v1/service/article-tagger/score'
-  key = 'aaEpe1OxRyWTDuSNdvzKxsrFdKWQbhh6'
+  scoring_uri = 'https://models.delphai.red/api/v1/service/ner-tagger/score'
+  key = 'rrxwzqktmktzcmFby4SaWcG0Q4XCs417'
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
