@@ -1,5 +1,6 @@
 from delphai_utils.formatting import clean_url
 import trafilatura
+from newspaper import Article, fulltext
 from bson import ObjectId
 from cleantext import clean
 from cleanco import prepare_terms, basename
@@ -54,6 +55,9 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
 
   # logging.info(f'html after: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
+  article = Article(url=url)
+  article.download(input_html=html)
+  article.parse()
   # logging.info(f'page_content: {page_content}')
   if page_content is not None:
     page_content = preprocess_text(str(page_content))
@@ -66,16 +70,23 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
       except Exception as e:
         logging.error(f'no date found for {url}:', e)
         article_publication_date = date if date else None
+      if not article_publication_date:
+        article_publication_date = article.publish_date
       try:
         article_title = preprocess_text(str(page_metadata["title"]))
       except Exception as e:
         logging.error(f'no title found for {url}:', e)
-        article_title = None
+        article_title = article.title
       return article_title, page_content, article_publication_date
     else:
-      return None, page_content, None
+      article_title = article.title
+      article_publication_date = article.publish_date
+      return article_title, page_content, article_publication_date
   else:
-    return None, page_content, None
+    article_title = article.title
+    article_publication_date = article.publish_date
+    page_content = article.text
+    return article_title, page_content, article_publication_date
 
 
 def get_company_info_from_article(company_name: str, content: str):
