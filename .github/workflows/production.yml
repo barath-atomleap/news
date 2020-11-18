@@ -1,0 +1,63 @@
+# dig -t txt variant.delphai.com +short | tr -d '"'
+
+name: production
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build_image:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "VARIANT=$(dig -t txt variant.delphai.com +short | tr -d '\"' | tr a-z A-Z)" >> $GITHUB_ENV
+      - run: echo "current variant is ${VARIANT}"
+      - run: echo "ACR_PASSWORD_SECRET=ACR_PASSWORD_${VARIANT}" >> $GITHUB_ENV
+      - run: echo "ACR_REGISTRY_SECRET=ACR_REGISTRY_${VARIANT}" >> $GITHUB_ENV
+      - run: echo "ACR_USERNAME_SECRET=ACR_USERNAME_${VARIANT}" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+      - run: echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//") >> $GITHUB_ENV
+        shell: bash
+      - uses: rlespinasse/github-slug-action@v3.x
+      - uses: mr-smithers-excellent/docker-build-push@v3
+        with:
+          image: ${{ env.REPOSITORY_NAME }}
+          password: ${{ secrets[env.ACR_PASSWORD_SECRET] }}
+          registry: ${{ secrets[env.ACR_REGISTRY_SECRET] }}
+          tag: ${{ env.GITHUB_REF_SLUG }}
+          buildArgs: 'SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}'
+          username: ${{ secrets[env.ACR_USERNAME_SECRET] }}
+      - run:
+          docker inspect --format='{{index .RepoDigests 0}}' ${{ secrets[env.ACR_REGISTRY_SECRET] }}/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
+          > image_sha_${VARIANT}.txt
+      - uses: actions/upload-artifact@v1
+        with:
+          name: image_sha_${{env.VARIANT}}
+          path: image_sha_${{env.VARIANT}}.txt
+  deploy:
+    needs: build_image
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "VARIANT=$(dig -t txt variant.delphai.com +short | tr -d '\"' | tr a-z A-Z)" >> $GITHUB_ENV
+      - name: Download Image_sha
+        uses: actions/download-artifact@v1
+        with:
+          name: image_sha_${{env.VARIANT}}
+      - name: Set SHA value
+        run: echo IMAGE_SHA=$(cat image_sha_${VARIANT}/image_sha_${VARIANT}.txt) >> $GITHUB_ENV
+        shell: bash
+      - uses: actions/checkout@v2
+      - run: echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//") >> $GITHUB_ENV
+        shell: bash
+      - uses: rlespinasse/github-slug-action@v3.x
+      - uses: delphai/delphai-kubernetes-deployment@master
+        with:
+          client_id: ${{ secrets.ARM_CLIENT_ID_PRODUCTION }}
+          client_secret: ${{ secrets.ARM_CLIENT_SECRET_PRODUCTION }}
+          delphai_enviroment: ${{ env.VARIANT }}
+          grpcport: 8080
+          httpport: 7070
+          image_sha: ${{ env.IMAGE_SHA }}
+          is_ui: false
+          tenant_id: ${{ secrets.ARM_TENANT_ID_PRODUCTION }}
