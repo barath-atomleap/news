@@ -76,7 +76,9 @@ def save_article(companies: list,
                  date: str = '',
                  get_named_entities: bool = False,
                  no_products: bool = False,
-                 topic: str = ''):
+                 topic: str = '',
+                 title: str = '',
+                 content: str = ''):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -92,6 +94,8 @@ def save_article(companies: list,
       get_named_entities: tries to recognize entities automatically
       no_products: skip products detection
       topic: topic of the article
+      title: title of the article
+      content: content of the article
   Returns: article ids in DB
   """
   try:
@@ -101,12 +105,13 @@ def save_article(companies: list,
       html = base64.b64decode(html).decode('utf-8')
 
     # boilerplate and save article in file
-    title, content, date = news_boilerplater(html=html, url=page_url, date=date)
+    if not title and not content:
+      title, content, date = news_boilerplater(html=html, url=page_url, date=date)
     logging.info(f'title: {title}')
     logging.info(f'content: {content}')
     logging.info(f'date: {date}')
     if test_mode:
-      return {'title': title, 'content': content}
+      return {'title': title, 'content': content, 'date': date, 'message': 'test_mode enabled'}
 
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
@@ -201,9 +206,9 @@ def save_article(companies: list,
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
               article_id = str(article_id.upserted_id)
-              message = f'{page_url} added to DB.'
+              message += f'{page_url} added to DB.'
             else:
-              message = f'{page_url} already exists.'
+              message += f'{page_url} already exists.'
               article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
             # calling products service
@@ -248,10 +253,12 @@ def save_article(companies: list,
       except Exception as e:
         logging.error(f'Error: {e}')
         return {'title': title, 'content': content, 'message': f'Error: {e}'}
-    if title is None or content is None:
-      message = f'Article content is empty for url={page_url}.'
-    else:
-      message = f'No date found for url={page_url}.'
+    if title is None:
+      message += f'Article title is empty for the given url.'
+    if content is None:
+      message += f'Article content is empty for the given url.'
+    if date is None:
+      message += f'Article date is empty for the given url.'
     return {'message': message}
 
   except Exception as e:
