@@ -1,10 +1,12 @@
 import sys
+sys.path.append('./src/proto')
 from google.protobuf.json_format import MessageToDict
 from delphai_utils.grpc_server import create_grpc_server, start_server
 import proto.news_pb2 as service_pb2
 import proto.news_pb2_grpc as service_pb2_grpc
 from services.articles import articles_data, save_article
-sys.path.append('./src/proto')
+from delphai_utils.logging import logging
+logging.getLogger('azure').setLevel(logging.ERROR)
 
 
 class News(service_pb2_grpc.News):
@@ -16,7 +18,7 @@ class News(service_pb2_grpc.News):
     return service_pb2.ArticlesResponse(articles=articles.get('articles', []), total_articles=articles.get('total', 0))
 
   async def add_articles(self, request: service_pb2.AddArticlesRequest, context):
-    request_dict = MessageToDict(request)
+    request_dict = MessageToDict(request, preserving_proto_field_name=True)
     article = save_article(
         request_dict.get('companies'),
         request_dict.get('url'),
@@ -27,11 +29,14 @@ class News(service_pb2_grpc.News):
         request_dict.get('get_named_entities'),
         request_dict.get('no_products'),
         request_dict.get('topic'),
+        request_dict.get('title'),
+        request_dict.get('content')
     )
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
                                            content=article.get('content', ''),
-                                           message=article.get('message', ''))
+                                           message=article.get('message', ''),
+                                           date=article.get('date', ''))
 
 
 if __name__ == "__main__":
