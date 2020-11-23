@@ -1,0 +1,25 @@
+name: destroy-review
+
+on: [delete]
+
+jobs:
+  destroy-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//") >> $GITHUB_ENV
+        shell: bash
+      - run: echo BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/}) >> $GITHUB_ENV
+        shell: bash
+      - run: echo "This Repo name is $REPOSITORY_NAME and on branch $BRANCH_NAME"
+      - uses: rlespinasse/github-slug-action@v3.x
+      - run: | 
+          echo "REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")" >> $GITHUB_ENV
+          echo "GITHUB_REF_SLUG=$(echo "${{ github.event.ref }}" | iconv -t ascii//TRANSLIT | sed -r s/[^a-zA-Z0-9]+/-/g | sed -r s/^-+\|-+$//g | tr A-Z a-z)" >> $GITHUB_ENV
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az login --service-principal --username ${{ secrets.ARM_CLIENT_ID_REVIEW }} --password ${{ secrets.ARM_CLIENT_SECRET_REVIEW }} --tenant ${{ secrets.ARM_TENANT_ID_REVIEW }}
+          az aks get-credentials -n delphai-review -g tf-cluster
+          sudo snap install helm --classic
+          helm repo add delphai https://delphai.github.io/helm-charts && helm repo update
+          helm uninstall $REPOSITORY_NAME-$BRANCH_NAME -n $REPOSITORY_NAME
+      
