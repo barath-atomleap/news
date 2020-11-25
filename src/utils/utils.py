@@ -48,6 +48,24 @@ def is_text_in_english(text: str):
       return False
 
 
+def check_language(text: str):
+  """
+    Detects the language of a given text and returns the language.
+    :return: language code
+    """
+
+  try:
+    response = requests.post("https://api.delphai.blue/translation/delphai.Translation.detect_language",
+                             json={
+                                 "text": text
+                             }).json()
+    return response["language"]
+  except Exception as e:
+    logging.warning(f'lang detect failed: {e}')
+    language = cld3.get_language(text)
+    return str(language[0])
+
+
 def translate_to_english(text: str):
   """
     Translates given text to English.

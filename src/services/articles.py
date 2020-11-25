@@ -4,7 +4,7 @@ from unidecode import unidecode
 from bson import ObjectId
 import datetime
 from delphai_utils.formatting import clean_url
-from utils.utils import save_blob, is_text_in_english, translate_to_english
+from utils.utils import check_language, save_blob, is_text_in_english, translate_to_english
 from delphai_utils.logging import logging
 from delphai_utils.db import db_sync
 from .news_processing import create_company_to_description_dict, enrich_company_to_description_dict
@@ -78,7 +78,8 @@ def save_article(companies: list,
                  no_products: bool = False,
                  topic: str = '',
                  title: str = '',
-                 content: str = ''):
+                 content: str = '',
+                 translate: bool = True):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -96,10 +97,12 @@ def save_article(companies: list,
       topic: topic of the article
       title: title of the article
       content: content of the article
+      translate: translate the article
   Returns: article ids in DB
   """
   try:
     message = ''
+    content_lang = ''
     logging.info(f'Saving article from {page_url}, test mode {test_mode}')
     if html:
       html = base64.b64decode(html).decode('utf-8')
@@ -122,9 +125,10 @@ def save_article(companies: list,
         unmatched_companies = False
 
         # translate text if necessary
-        if not is_text_in_english(title):
-          title = translate_to_english(title)
-        if not is_text_in_english(content):
+        content_lang = check_language(content)
+        if content_lang != 'en' and translate:
+          if not is_text_in_english(title):
+            title = translate_to_english(title)
           content = translate_to_english(content)
           is_translated = True
 
@@ -166,7 +170,8 @@ def save_article(companies: list,
         # save data
         if companies:
           try:
-            html_ref = save_blob('news/html/' + clean_url(page_url), html)
+            if html:
+              html_ref = save_blob('news/html/' + clean_url(page_url), html)
             content_ref = save_blob('news/content/' + clean_url(page_url), content)
           except Exception as e:
             logging.error(f'Error saving to blob storage: {e}')
@@ -197,6 +202,8 @@ def save_article(companies: list,
               data['source'] = source
             if topic:
               data['topic'] = topic
+            if content_lang:
+              data['lang'] = content_lang
             article_id = db.news.update_one({
                 'company_id': ObjectId(company['_id']),
                 'url': page_url

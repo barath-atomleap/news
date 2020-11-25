@@ -19,19 +19,11 @@ class News(service_pb2_grpc.News):
 
   async def add_articles(self, request: service_pb2.AddArticlesRequest, context):
     request_dict = MessageToDict(request, preserving_proto_field_name=True)
-    article = save_article(
-        request_dict.get('companies'),
-        request_dict.get('url'),
-        request_dict.get('html'),
-        request_dict.get('test_mode'),
-        request_dict.get('source'),
-        request_dict.get('date'),
-        request_dict.get('get_named_entities'),
-        request_dict.get('no_products'),
-        request_dict.get('topic'),
-        request_dict.get('title'),
-        request_dict.get('content')
-    )
+    article = save_article(request_dict.get('companies'), request_dict.get('url'), request_dict.get('html'),
+                           request_dict.get('test_mode'), request_dict.get('source'), request_dict.get('date'),
+                           request_dict.get('get_named_entities'), request_dict.get('no_products'),
+                           request_dict.get('topic'), request_dict.get('title'), request_dict.get('content'),
+                           request_dict.get('translate', True))
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
                                            content=article.get('content', ''),
