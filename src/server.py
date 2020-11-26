@@ -23,7 +23,7 @@ class News(service_pb2_grpc.News):
                            request_dict.get('test_mode'), request_dict.get('source'), request_dict.get('date'),
                            request_dict.get('get_named_entities'), request_dict.get('no_products'),
                            request_dict.get('topic'), request_dict.get('title'), request_dict.get('content'),
-                           request_dict.get('translate', True))
+                           request_dict.get('add_only_english', False))
     return service_pb2.AddArticlesResponse(article_ids=article.get('article_ids', []),
                                            title=article.get('title', ''),
                                            content=article.get('content', ''),

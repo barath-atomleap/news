@@ -79,7 +79,7 @@ def save_article(companies: list,
                  topic: str = '',
                  title: str = '',
                  content: str = '',
-                 translate: bool = True):
+                 add_only_english: bool = False):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -97,7 +97,7 @@ def save_article(companies: list,
       topic: topic of the article
       title: title of the article
       content: content of the article
-      translate: translate the article
+      add_only_english: add only articles in English
   Returns: article ids in DB
   """
   try:
@@ -119,16 +119,19 @@ def save_article(companies: list,
     # if there is content retrieved from the page
     if title is not None and content is not None and date is not None:
       try:
-        html_ref = ''
-        content_ref = ''
+        html_ref = content_ref = original_content_ref = ''
+        original_content = ''
         is_translated = False
         unmatched_companies = False
 
         # translate text if necessary
         content_lang = check_language(content)
-        if content_lang != 'en' and translate:
-          if not is_text_in_english(title):
-            title = translate_to_english(title)
+        if content_lang != 'en':
+          if add_only_english:
+            return {'title': title, 'content': content, 'date': date, 'message': 'Article not in Englsih'}
+
+          title = translate_to_english(title)
+          original_content = content
           content = translate_to_english(content)
           is_translated = True
 
@@ -173,6 +176,8 @@ def save_article(companies: list,
             if html:
               html_ref = save_blob('news/html/' + clean_url(page_url), html)
             content_ref = save_blob('news/content/' + clean_url(page_url), content)
+            if original_content:
+              original_content_ref = save_blob('news/original_content/' + clean_url(page_url), original_content)
           except Exception as e:
             logging.error(f'Error saving to blob storage: {e}')
 
@@ -196,6 +201,8 @@ def save_article(companies: list,
               data['is_translated'] = is_translated
             if content_ref:
               data['content_ref'] = content_ref
+            if original_content_ref:
+              data['original_content_ref'] = original_content_ref
             if html_ref:
               data['html_ref'] = html_ref
             if source:

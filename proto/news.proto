@@ -49,7 +49,7 @@ message AddArticlesRequest {
   string topic = 9;
   string title = 10;
   string content = 11;
-  bool translate = 12;
+  bool add_only_english = 12;
 }
 
 message AddArticlesResponse {
