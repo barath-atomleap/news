@@ -110,9 +110,7 @@ def save_article(companies: list,
     # boilerplate and save article in file
     if not title and not content:
       title, content, date = news_boilerplater(html=html, url=page_url, date=date)
-    logging.info(f'title: {title}')
-    logging.info(f'content: {content}')
-    logging.info(f'date: {date}')
+    logging.info(f'Title={title}, Content={content[:100]} ... , Date={date}')
     if test_mode:
       return {'title': title, 'content': content, 'date': date, 'message': 'test_mode enabled'}
 
@@ -147,14 +145,14 @@ def save_article(companies: list,
           if nes is not None:
             # get organization names
             organization_names = [i[0] for i in nes]
-            logging.info("Named entities={}, organizations={}".format(nes, organization_names))
+            logging.info(f"Named entities={nes}, Organizations={organization_names}")
 
             # match them to DB
             matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
                 named_entities=organization_names, hard_matching=False)
-            logging.info("Linked company names={} with urls={}".format(matched_companies, matched_urls))
 
             if matched_companies and matched_urls and matched_ids and company_mentions:
+              logging.info(f"Linked company names={matched_companies} with urls={matched_urls}")
               # save their article descriptions
               new_companies, company_to_description_dict = enrich_company_to_description_dict(
                   company_to_description_dict=company_to_description_dict,
@@ -165,11 +163,12 @@ def save_article(companies: list,
               # include them in `companies` and the company-article pairs later on in the DB
               companies = companies + new_companies
               unmatched_companies = [com for com in organization_names if com not in companies]
+              message += f'Adding article to {len(new_companies)} more companies in delphai ({new_companies}).\n'
             else:
               logging.warning('Warning: No companies linked to our DB')
         except Exception as e:
           logging.error(f'Error getting named entities: {e}')
-
+          message += 'Either the named entity recognition or linking service is not responding.\n'
         # save data
         if companies:
           try:
@@ -220,9 +219,9 @@ def save_article(companies: list,
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
               article_id = str(article_id.upserted_id)
-              message += f'{page_url} added to DB.'
+              message += f'{page_url} added to DB.\n'
             else:
-              message += f'{page_url} already exists.'
+              message += f'{page_url} already exists.\n'
               article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
             # calling products service
@@ -240,6 +239,8 @@ def save_article(companies: list,
               except Exception as e:
                 logging.error(f'Error getting product information: {e}')
                 continue
+          else:
+            message += 'Company name not found in article.\n'
 
         if unmatched_companies:
           data = {
