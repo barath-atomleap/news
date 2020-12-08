@@ -204,7 +204,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   return None, None, None, None
 
 
-def create_company_to_description_dict(companies: list, title: str, content: str):
+def create_company_to_descr_dict(companies: list, title: str, content: str):
   """
   Save the descriptions of the `companies` the way they are discussed in the article text. A description in
   this case is the text displayed in delphai under a url in the news tab.
@@ -232,13 +232,13 @@ def create_company_to_description_dict(companies: list, title: str, content: str
   return company_to_description_dict
 
 
-def enrich_company_to_description_dict(company_to_description_dict: dict, company_mentions: list, company_ids: list,
-                                       title: str, content: str):
+def enrich_company_to_descr_dict(company_to_descr_dict: dict, company_mentions: list, company_ids: list,
+                                 title: str, content: str):
   """
   Combine given companies and discovered companies in the company_desc dict.
   Args:
     company_mentions: named entities that are discovered
-    company_to_description_dict: the dict with the sentences that have company mentions
+    company_to_descr_dict: the dict with the sentences that have company mentions
     company_ids: the company ids of the named entities in our DB
     title: news article title
     content: news article body
@@ -246,14 +246,14 @@ def enrich_company_to_description_dict(company_to_description_dict: dict, compan
   """
   new_companies = list()
   for idx, company_mention in enumerate(company_mentions):
-    if (len(company_to_description_dict) > 0 and not any(company_ids[idx] in d for d in company_to_description_dict)) \
+    if (len(company_to_descr_dict) > 0 and not any(company_ids[idx] in d for d in company_to_descr_dict)) \
             or \
-            (len(company_to_description_dict) == 0):
+            (len(company_to_descr_dict) == 0):
       company_dict = dict()
       company_dict["_id"] = company_ids[idx]
       company_dict["name"] = company_mention
-      company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
-                                                                                       content="{}. {}".format(
+      company_to_descr_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
+                                                                                 content="{}. {}".format(
                                                                                            title, content))
       new_companies.append(company_dict)
-  return new_companies, company_to_description_dict
+  return new_companies, company_to_descr_dict
