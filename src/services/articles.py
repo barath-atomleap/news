@@ -196,8 +196,14 @@ def save_article(companies: list,
                 title=title,
                 content=content)
               # include them in `companies` and the company-article pairs later on in the DB
+              logging.info(f'input companies:{companies}')
               companies = companies + new_companies
-              unmatched_companies = [com for com in organization_names if com not in companies]
+              logging.info(f'new_companies:{new_companies}')
+              unique_organization_names = set(organization_names)
+              unmatched_companies = [org for org in unique_organization_names if not(any(com['name'] == org for com in
+                                                                                companies))]
+              logging.info(f'unmatched_companies:{unmatched_companies}')
+              logging.info(f'matched companies:{companies}')
               message += f'Adding article to {len(new_companies)} more companies in delphai ({new_companies}).\n'
             else:
               logging.warning('Warning: No companies linked to our DB')
