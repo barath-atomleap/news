@@ -22,41 +22,41 @@ def articles_data(company_id, start_row, fetch_count):
     skip = (start_row - 1) * fetch_count
 
     news_articles = news.aggregate([{
-        "$match": {
-            "company_id": ObjectId(company_id)
-        }
+      "$match": {
+        "company_id": ObjectId(company_id)
+      }
     }, {
-        "$project": {
-            "_id": 0,
-            "description": 1,
-            "mentions": 1,
-            "is_translated": 1,
-            "date": {
-                '$dateToString': {
-                    'format': '%Y-%m-%d',
-                    'date': {
-                        '$toDate': '$date'
-                    }
-                }
-            },
-            "title": 1,
-            "url": 1
-        }
+      "$project": {
+        "_id": 0,
+        "description": 1,
+        "mentions": 1,
+        "is_translated": 1,
+        "date": {
+          '$dateToString': {
+            'format': '%Y-%m-%d',
+            'date': {
+              '$toDate': '$date'
+            }
+          }
+        },
+        "title": 1,
+        "url": 1
+      }
     }, {
-        "$sort": {
-            "date": -1
-        }
+      "$sort": {
+        "date": -1
+      }
     }, {
-        "$facet": {
-            "total": [{
-                "$count": "count"
-            }],
-            "articles": [{
-                "$skip": skip
-            }, {
-                "$limit": int(fetch_count)
-            }]
-        }
+      "$facet": {
+        "total": [{
+          "$count": "count"
+        }],
+        "articles": [{
+          "$skip": skip
+        }, {
+          "$limit": int(fetch_count)
+        }]
+      }
     }])
 
     results = list(news_articles)[0]
@@ -100,6 +100,43 @@ def save_article(companies: list,
       add_only_english: add only articles in English
   Returns: article ids in DB
   """
+
+  def create_data_object(title, description, mentions, date, is_translated, content_ref, original_content_ref,
+                         html_ref, source, topic, lang, unmatched_companies):
+    """
+    Create object to ingest to the news db collection.
+    """
+    data = dict()
+    if title:
+      data['title'] = title
+    else:
+      logging.error('Trying to add a news article with empty title to the db.')
+    if date:
+      data['date'] = date
+    else:
+      logging.error('Trying to add a news article with empty date to the db.')
+    if description:
+      data['description'] = description
+    if mentions:
+      data['mentions'] = mentions
+    if is_translated:
+      data['is_translated'] = is_translated
+    if content_ref:
+      data['content_ref'] = content_ref
+    if original_content_ref:
+      data['original_content_ref'] = original_content_ref
+    if html_ref:
+      data['html_ref'] = html_ref
+    if source:
+      data['source'] = source
+    if topic:
+      data['topic'] = topic
+    if lang:
+      data['lang'] = lang
+    if unmatched_companies:
+      data['companies'] = unmatched_companies
+    return data
+
   try:
     message = ''
     content_lang = ''
@@ -147,17 +184,17 @@ def save_article(companies: list,
             logging.info(f"Named entities={nes}, Organizations={organization_names}")
             # match them to DB
             matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
-                named_entities=organization_names, hard_matching=False)
+              named_entities=organization_names, hard_matching=False)
             # if matching linked at least one company to our database
             if matched_companies and matched_urls and matched_ids and company_mentions:
               logging.info(f"Linked company names={matched_companies} with urls={matched_urls}")
               # find the mentions of the companies discovered by ner
               new_companies, company_to_descr_dict = enrich_company_to_descr_dict(
-                  company_to_descr_dict=company_to_descr_dict,
-                  company_mentions=company_mentions,
-                  company_ids=matched_ids,
-                  title=title,
-                  content=content)
+                company_to_descr_dict=company_to_descr_dict,
+                company_mentions=company_mentions,
+                company_ids=matched_ids,
+                title=title,
+                content=content)
               # include them in `companies` and the company-article pairs later on in the DB
               companies = companies + new_companies
               unmatched_companies = [com for com in organization_names if com not in companies]
@@ -189,31 +226,23 @@ def save_article(companies: list,
             company_article_match_found = True
             printable_description = unidecode(company_to_descr_dict[company["_id"]])
             all_article_descriptions.append(printable_description)
-            data = {
-                'title': title,
-                'description': printable_description,
-                'mentions': [company["name"]],
-                'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
-            }
-            if is_translated:
-              data['is_translated'] = is_translated
-            if content_ref:
-              data['content_ref'] = content_ref
-            if original_content_ref:
-              data['original_content_ref'] = original_content_ref
-            if html_ref:
-              data['html_ref'] = html_ref
-            if source:
-              data['source'] = source
-            if topic:
-              data['topic'] = topic
-            if content_lang:
-              data['lang'] = content_lang
+            data = create_data_object(title=title,
+                                      description=printable_description,
+                                      mentions=[company["name"]],
+                                      date=datetime.datetime.strptime(str(date), '%Y-%m-%d'),
+                                      is_translated=is_translated,
+                                      content_ref=content_ref,
+                                      original_content_ref=original_content_ref,
+                                      html_ref=html_ref,
+                                      source=source,
+                                      topic=topic,
+                                      lang=content_lang,
+                                      unmatched_companies=[])
             article_id = db.news.update_one({
-                'company_id': ObjectId(company['_id']),
-                'url': page_url
+              'company_id': ObjectId(company['_id']),
+              'url': page_url
             }, {'$set': data},
-                                            upsert=True)
+              upsert=True)
 
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
@@ -243,27 +272,28 @@ def save_article(companies: list,
 
         # add newly discovered company names that could not be linked to our db in a separate db collection
         if unmatched_companies:
-          data = {
-              'title': title,
-              'companies': list(set(unmatched_companies)),
-              'date': datetime.datetime.strptime(str(date), '%Y-%m-%d')
-          }
-          if is_translated:
-            data['is_translated'] = is_translated
-          if content_ref:
-            data['content_ref'] = content_ref
-          if html_ref:
-            data['html_ref'] = html_ref
+          data = create_data_object(title=title,
+                                    description='',
+                                    mentions=[],
+                                    date=datetime.datetime.strptime(str(date), '%Y-%m-%d'),
+                                    is_translated=is_translated,
+                                    content_ref=content_ref,
+                                    original_content_ref=None,
+                                    html_ref=html_ref,
+                                    source='',
+                                    topic='',
+                                    lang='',
+                                    unmatched_companies=list(set(unmatched_companies)))
           db.news_unmatched.update_one({'url': page_url}, {'$set': data}, upsert=True)
 
         if company_article_match_found:
           return {
-              'article_ids': article_id_list,
-              'title': title,
-              'content': content,
-              'descriptions': all_article_descriptions,
-              'product_descriptions': all_product_article_descriptions,
-              'message': f'Added {len(article_id_list)} company-article pairs to DB.'
+            'article_ids': article_id_list,
+            'title': title,
+            'content': content,
+            'descriptions': all_article_descriptions,
+            'product_descriptions': all_product_article_descriptions,
+            'message': f'Added {len(article_id_list)} company-article pairs to DB.'
           }
       except Exception as e:
         logging.error(f'Error: {e}')
