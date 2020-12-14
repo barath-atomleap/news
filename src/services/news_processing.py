@@ -112,8 +112,8 @@ def get_company_nes_from_article(article: str):
   :param article: body of news article
   :return: dictionary with organizations discovered by spacy
   """
-  scoring_uri = 'https://models.delphai.red/api/v1/service/ner-tagger/score'
-  key = 'rrxwzqktmktzcmFby4SaWcG0Q4XCs417'
+  scoring_uri = 'https://azure-ml.delphai.red/api/v1/service/ner-tagger/score'
+  key = '1r4amNny4qvglU3pvJQYMbizsE0hjQx2'
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
@@ -180,7 +180,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     try:
       logging.info("Name matcher input: {}".format(all_entities))
       ner_matching_response = requests.post(
-          'https://api.delphai.blue/names-matcher/delphai.namesmatcher.NamesMatcher.match',
+          'https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match',
           json={
               'names': all_entities
           }).json()
