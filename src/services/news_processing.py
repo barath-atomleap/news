@@ -127,6 +127,26 @@ def get_company_nes_from_article(article: str):
   return None
 
 
+def get_company_nes_from_ger_article(article: str):
+  """
+  Given a german news article, it returns the company mentions identified as named entities.
+  :param article: body of german news article
+  :return: dictionary with organizations discovered by spacy
+  """
+  scoring_uri = 'https://models.delphai.red/api/v1/service/ger-ner-tagger/score'
+  key = 'ZqV6GVNHrPQpvMppo9LZ984DlObVPtxR'
+  input_data = json.dumps(article)
+  # Set the content type and authorization
+  headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
+  try:
+    resp = requests.post(scoring_uri, input_data, headers=headers)
+    mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
+    return mention_dict['ORG']
+  except json.decoder.JSONDecodeError as e:
+    logging.error(f"Calling the German NER service caused an error: {e}. Retrying to do the post request another time.")
+  return None
+
+
 def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   """
     Given a list of organizations discovered in the text with the named entity recognizer, match them to our DB and

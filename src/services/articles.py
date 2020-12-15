@@ -7,8 +7,8 @@ from delphai_utils.formatting import clean_url
 from utils.utils import check_language, save_blob, is_text_in_english, translate_to_english
 from delphai_utils.logging import logging
 from delphai_utils.db import db_sync
+from .news_processing import match_nes_to_db_companies, news_boilerplater, get_company_nes_from_article, get_company_nes_from_ger_article
 from .news_processing import create_company_to_descr_dict, enrich_company_to_descr_dict
-from .news_processing import match_nes_to_db_companies, news_boilerplater, get_company_nes_from_article
 
 db = db_sync
 news = db.news
@@ -162,9 +162,17 @@ def save_article(companies: list,
 
         # translate text if necessary
         content_lang = check_language(content)
+        nes = None
+        multilingual_ner_done = False
+
         if content_lang != 'en':
           if add_only_english:
             return {'title': title, 'content': content, 'date': date, 'message': 'Article not in English'}
+          # check if language is German and use German ner in this case
+          if content_lang == 'de':
+            nes = get_company_nes_from_ger_article(
+                article="{}. {}".format(title, content)) if get_named_entities else None
+            multilingual_ner_done = True
           title = translate_to_english(title)
           original_content = content
           content = translate_to_english(content)
@@ -176,7 +184,9 @@ def save_article(companies: list,
         # link input and discovered companies to our company database
         try:
           # get named entities
-          nes = get_company_nes_from_article(article="{}. {}".format(title, content)) if get_named_entities else None
+          if nes is None and multilingual_ner_done is False:
+            nes = get_company_nes_from_article(article="{}. {}".format(title, content)) if get_named_entities else None
+
           # if ner service didn't return an empty reponse and if article has entities
           if nes is not None:
             # get organization names
