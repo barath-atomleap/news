@@ -167,21 +167,40 @@ def save_article(companies: list,
         content_lang = check_language(content)
         nes = None
         multilingual_ner_done = False
+        company_to_mask_dict = dict()
+        mask_count = 0
 
         if content_lang != 'en':
           if add_only_english:
             return {'title': title, 'content': content, 'date': date, 'message': 'Article not in English'}
+          if companies:
+            for company in companies:
+              company_to_mask_dict[company["name"]] = f'NE{mask_count}'
+              mask_count += 1
           # check if language is German and use German ner in this case
           if content_lang == 'de':
             nes = get_company_nes_from_ger_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
-            if nes:
-              logging.info(f'German nes:{nes}')
-            multilingual_ner_done = True
+            logging.info(f'German nes:{nes}')
+          else:
+            logging.warning(f'There is no available NER model for the language of the current article '
+                            f'({content_lang}).')
+          if nes:
+            for ne in nes:
+              company_to_mask_dict[ne[0]] = f'NE{mask_count}'
+              mask_count += 1
+          for mention in company_to_mask_dict:
+            title = title.replace(mention, company_to_mask_dict[mention])
+            content = content.replace(mention, company_to_mask_dict[mention])
+          logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
           title = translate_to_english(title)
           original_content = content
           content = translate_to_english(content)
           is_translated = True
+          logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
+          for mention in company_to_mask_dict:
+            title = title.replace(company_to_mask_dict[mention], mention)
+            content = content.replace(company_to_mask_dict[mention], mention)
           logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
 
         # find sentences with input company mentions. if companies are given then we assume they will appear in the text
@@ -189,9 +208,10 @@ def save_article(companies: list,
 
         # link input and discovered companies to our company database
         try:
-          # get named entities
-          if nes is None and multilingual_ner_done is False:
+          # get named entities for English articles
+          if content_lang == 'en':
             nes = get_company_nes_from_article(article="{}. {}".format(title, content)) if get_named_entities else None
+            logging.info(f'English named entities:{nes}')
 
           # if ner service didn't return an empty reponse and if article has entities
           if nes is not None:
@@ -225,7 +245,7 @@ def save_article(companies: list,
             else:
               logging.warning('Warning: No companies linked to our DB')
         except Exception as e:
-          logging.error(f'Error getting named entities: {e}')
+          logging.error(f'Error getting named entities: {e}. Named entities: {nes}')
           message += 'Either the named entity recognition or linking service is not responding.\n'
 
         # save html and text, only if the article contains company mentions
