@@ -77,7 +77,7 @@ def translate_to_english(text: str):
   english_text = None
   try:
     response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate", json={
-        "text": text
+        "text": text, "method": 'azure'
     }).json()
 
     return response["translation"]
