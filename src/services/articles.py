@@ -138,6 +138,9 @@ def save_article(companies: list,
     return data
 
   try:
+    # to catch 'NoneType' object is not iterable
+    if not companies:
+      companies = list()
     message = ''
     content_lang = ''
     logging.info(f'Saving article from {page_url}, test mode {test_mode}')
@@ -148,7 +151,7 @@ def save_article(companies: list,
     # if not boilerplated input, process and boilerplate article
     if not title and not content:
       title, content, date = news_boilerplater(html=html, url=page_url, date=date)
-    logging.info(f'Title={title}, Content={content[:100]} ... , Date={date}')
+    logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
     if test_mode:
       return {'title': title, 'content': content, 'date': date, 'message': 'test_mode enabled'}
 
@@ -172,11 +175,14 @@ def save_article(companies: list,
           if content_lang == 'de':
             nes = get_company_nes_from_ger_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
+            if nes:
+              logging.info(f'German nes:{nes}')
             multilingual_ner_done = True
           title = translate_to_english(title)
           original_content = content
           content = translate_to_english(content)
           is_translated = True
+          logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
 
         # find sentences with input company mentions. if companies are given then we assume they will appear in the text
         company_to_descr_dict = create_company_to_descr_dict(companies=companies, title=title, content=content)
@@ -206,14 +212,15 @@ def save_article(companies: list,
                 title=title,
                 content=content)
               # include them in `companies` and the company-article pairs later on in the DB
-              logging.info(f'input companies:{companies}')
+              # logging.info(f'input companies:{companies}')
               companies = companies + new_companies
-              logging.info(f'new_companies:{new_companies}')
+              # logging.info(f'new_companies:{new_companies}')
+              logging.info(f'all companies:{companies}')
               unique_organization_names = set(organization_names)
+              logging.info(f'unique organizations:{unique_organization_names}')
               unmatched_companies = [org for org in unique_organization_names if not(any(com['name'] == org for com in
                                                                                 companies))]
               logging.info(f'unmatched_companies:{unmatched_companies}')
-              logging.info(f'matched companies:{companies}')
               message += f'Adding article to {len(new_companies)} more companies in delphai ({new_companies}).\n'
             else:
               logging.warning('Warning: No companies linked to our DB')
@@ -285,6 +292,7 @@ def save_article(companies: list,
                 continue
           else:
             message += 'Company name not found in article.\n'
+            logging.info(f'{company} not found in article.')
 
         # add newly discovered company names that could not be linked to our db in a separate db collection
         if unmatched_companies:
@@ -312,16 +320,19 @@ def save_article(companies: list,
             'message': f'Added {len(article_id_list)} company-article pairs to DB.'
           }
       except Exception as e:
-        logging.error(f'Error: {e}')
-        return {'title': title, 'content': content, 'message': f'Error: {e}'}
+        logging.error(f'Error while processing and saving the article: {e}')
+        return {'title': title, 'content': content, 'message': f'Error while processing and saving the article: {e}'}
     if title is None:
       message += f'Article title is empty for the given url.'
+      logging.info(message)
     if content is None:
       message += f'Article content is empty for the given url.'
+      logging.info(message)
     if date is None:
       message += f'Article date is empty for the given url.'
+      logging.info(message)
     return {'message': message}
 
   except Exception as e:
-    logging.error(f'Error: {e}')
-    return {'message': f'Error: {e}'}
+    logging.error(f'Error before processing the article: {e}')
+    return {'message': f'Error before processing the article: {e}'}
