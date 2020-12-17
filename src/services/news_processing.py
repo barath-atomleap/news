@@ -248,7 +248,7 @@ def create_company_to_descr_dict(companies: list, title: str, content: str):
           continue
       company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
                                                                                   content="{}. {}".format(
-                                                                                      title, content))
+                                                                                       content, title))
   return company_to_description_dict
 
 
@@ -274,6 +274,6 @@ def enrich_company_to_descr_dict(company_to_descr_dict: dict, company_mentions: 
       company_dict["name"] = company_mention
       company_to_descr_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
                                                                                  content="{}. {}".format(
-                                                                                           title, content))
+                                                                                           content, title))
       new_companies.append(company_dict)
   return new_companies, company_to_descr_dict
