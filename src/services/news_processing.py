@@ -121,6 +121,7 @@ def get_company_nes_from_article(article: str):
     try:
       resp = requests.post(scoring_uri, input_data, headers=headers)
       mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
+      logging.info(f'Mentions dict:{mention_dict}')
       return mention_dict['ORG']
     except json.decoder.JSONDecodeError as e:
       logging.error(f"Calling the NER service caused an error: {e}. Retrying to do the post request another time.")
