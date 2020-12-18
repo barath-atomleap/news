@@ -11,7 +11,6 @@ service News {
     option(google.api.http) = {get : "/{company_id}"};
   }
   rpc add_articles(AddArticlesRequest) returns(AddArticlesResponse) {}
-  rpc get_products(ArticlesRequest) returns(ArticlesResponse) {}
 }
 
 message ArticlesRequest {
@@ -44,6 +43,13 @@ message AddArticlesRequest {
   string html = 3;
   bool test_mode = 4;
   string date = 5;
+  bool get_named_entities = 6;
+  bool no_products = 7;
+  string source = 8;
+  string topic = 9;
+  string title = 10;
+  string content = 11;
+  bool add_only_english = 12;
 }
 
 message AddArticlesResponse {
@@ -51,4 +57,5 @@ message AddArticlesResponse {
   string title = 2;
   string content = 3;
   string message = 4;
+  string date = 5;
 }

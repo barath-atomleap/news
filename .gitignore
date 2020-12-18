@@ -8,3 +8,7 @@ __pycache__
 *_pb2.py
 .pytest_cache
 
+# pycharm
+../.idea/
+.idea
+

@@ -1,5 +1,6 @@
 from delphai_utils.formatting import clean_url
 import trafilatura
+from newspaper import Article, fulltext
 from bson import ObjectId
 from cleantext import clean
 from cleanco import prepare_terms, basename
@@ -54,6 +55,9 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
 
   # logging.info(f'html after: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
+  article = Article(url=url)
+  article.download(input_html=html)
+  article.parse()
   # logging.info(f'page_content: {page_content}')
   if page_content is not None:
     page_content = preprocess_text(str(page_content))
@@ -61,19 +65,28 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     if page_metadata is not None:
       try:
         article_publication_date = page_metadata["date"]
+        if not article_publication_date:
+          article_publication_date = date if date else None
       except Exception as e:
         logging.error(f'no date found for {url}:', e)
         article_publication_date = date if date else None
+      if not article_publication_date:
+        article_publication_date = article.publish_date
       try:
         article_title = preprocess_text(str(page_metadata["title"]))
       except Exception as e:
         logging.error(f'no title found for {url}:', e)
-        article_title = None
+        article_title = article.title
       return article_title, page_content, article_publication_date
     else:
-      return None, page_content, None
+      article_title = article.title
+      article_publication_date = article.publish_date
+      return article_title, page_content, article_publication_date
   else:
-    return None, page_content, None
+    article_title = article.title
+    article_publication_date = article.publish_date
+    page_content = article.text
+    return article_title, page_content, article_publication_date
 
 
 def get_company_info_from_article(company_name: str, content: str):
@@ -99,8 +112,30 @@ def get_company_nes_from_article(article: str):
   :param article: body of news article
   :return: dictionary with organizations discovered by spacy
   """
-  scoring_uri = 'http://51.145.149.205:80/api/v1/service/article-tagger/score'
-  key = 'aaEpe1OxRyWTDuSNdvzKxsrFdKWQbhh6'
+  scoring_uri = 'https://azure-ml.delphai.red/api/v1/service/ner-tagger/score'
+  key = '1r4amNny4qvglU3pvJQYMbizsE0hjQx2'
+  input_data = json.dumps(article)
+  # Set the content type and authorization
+  headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
+  for i in range(0, post_retry_times):
+    try:
+      resp = requests.post(scoring_uri, input_data, headers=headers)
+      mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
+      logging.info(f'Mentions dict:{mention_dict}')
+      return mention_dict['ORG']
+    except json.decoder.JSONDecodeError as e:
+      logging.error(f"Calling the NER service caused an error: {e}. Retrying to do the post request another time.")
+  return None
+
+
+def get_company_nes_from_ger_article(article: str):
+  """
+  Given a german news article, it returns the company mentions identified as named entities.
+  :param article: body of german news article
+  :return: dictionary with organizations discovered by spacy
+  """
+  scoring_uri = 'https://azure-ml.delphai.red/api/v1/service/ger-ner-tagger/score'
+  key = 'ZqV6GVNHrPQpvMppo9LZ984DlObVPtxR'
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
@@ -110,7 +145,7 @@ def get_company_nes_from_article(article: str):
       mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
       return mention_dict['ORG']
     except json.decoder.JSONDecodeError as e:
-      logging.error(f"Calling the NER service caused an error: {e}. Retrying to do the post request another time.")
+      logging.error(f"Calling the German NER service caused an error: {e}. Retrying to do the post request another time.")
   return None
 
 
@@ -167,7 +202,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     try:
       logging.info("Name matcher input: {}".format(all_entities))
       ner_matching_response = requests.post(
-          'https://api.delphai.blue/names-matcher/delphai.namesmatcher.NamesMatcher.match',
+          'https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match',
           json={
               'names': all_entities
           }).json()
@@ -179,7 +214,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
           }
           for r in ner_matching_response.get('results', [])
       }
-      logging.info("Name matcher result: {}".format(ner_best_matches))
+      logging.info(f'ner_matching_response:{ner_matching_response}')
       if ner_best_matches:
         # get company names from dict
         matched_names, matched_urls, matched_ids, company_mentions = get_names_of_matches(best_matches=ner_best_matches)
@@ -191,7 +226,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   return None, None, None, None
 
 
-def create_company_to_description_dict(companies: list, title: str, content: str):
+def create_company_to_descr_dict(companies: list, title: str, content: str):
   """
   Save the descriptions of the `companies` the way they are discussed in the article text. A description in
   this case is the text displayed in delphai under a url in the news tab.
@@ -215,17 +250,17 @@ def create_company_to_description_dict(companies: list, title: str, content: str
           continue
       company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
                                                                                   content="{}. {}".format(
-                                                                                      title, content))
+                                                                                       content, title))
   return company_to_description_dict
 
 
-def enrich_company_to_description_dict(company_to_description_dict: dict, company_mentions: list, company_ids: list,
-                                       title: str, content: str):
+def enrich_company_to_descr_dict(company_to_descr_dict: dict, company_mentions: list, company_ids: list,
+                                 title: str, content: str):
   """
   Combine given companies and discovered companies in the company_desc dict.
   Args:
     company_mentions: named entities that are discovered
-    company_to_description_dict: the dict with the sentences that have company mentions
+    company_to_descr_dict: the dict with the sentences that have company mentions
     company_ids: the company ids of the named entities in our DB
     title: news article title
     content: news article body
@@ -233,14 +268,14 @@ def enrich_company_to_description_dict(company_to_description_dict: dict, compan
   """
   new_companies = list()
   for idx, company_mention in enumerate(company_mentions):
-    if (len(company_to_description_dict) > 0 and not any(company_ids[idx] in d for d in company_to_description_dict)) \
+    if (len(company_to_descr_dict) > 0 and not any(company_ids[idx] in d for d in company_to_descr_dict)) \
             or \
-            (len(company_to_description_dict) == 0):
+            (len(company_to_descr_dict) == 0):
       company_dict = dict()
       company_dict["_id"] = company_ids[idx]
       company_dict["name"] = company_mention
-      company_to_description_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
-                                                                                       content="{}. {}".format(
-                                                                                           title, content))
+      company_to_descr_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
+                                                                                 content="{}. {}".format(
+                                                                                           content, title))
       new_companies.append(company_dict)
-  return new_companies, company_to_description_dict
+  return new_companies, company_to_descr_dict

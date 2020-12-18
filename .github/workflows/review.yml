@@ -2,54 +2,59 @@ jobs:
   build_image:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk
-        -F / '{print $2}' | sed -e "s/:refs//")
-      shell: bash
-    - uses: rlespinasse/github-slug-action@master
-    - uses: mr-smithers-excellent/docker-build-push@v3
-      with:
-        image: ${{ env.REPOSITORY_NAME }}
-        password: ${{ secrets.ACR_PASSWORD_REVIEW }}
-        registry: ${{ secrets.ACR_REGISTRY_REVIEW }}
-        tag: ${{ env.GITHUB_REF_SLUG }}
-        buildArgs: 'SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}'
-        username: ${{ secrets.ACR_USERNAME_REVIEW }}
-    - run: docker inspect --format='{{index .RepoDigests 0}}' delphaireview.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
-        > image_sha.txt
-    - uses: actions/upload-artifact@v1
-      with:
-        name: image_sha
-        path: image_sha.txt
+      - run: echo "ACTIONS_ALLOW_UNSECURE_COMMANDS=true" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+      - run:
+          echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk
+          -F / '{print $2}' | sed -e "s/:refs//")
+        shell: bash
+      - uses: rlespinasse/github-slug-action@v3.x
+      - uses: mr-smithers-excellent/docker-build-push@v3
+        with:
+          buildArgs: SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}
+          image: ${{ env.REPOSITORY_NAME }}
+          password: ${{ secrets.ACR_PASSWORD_REVIEW }}
+          registry: ${{ secrets.ACR_REGISTRY_REVIEW }}
+          tag: ${{ env.GITHUB_REF_SLUG }}
+          username: ${{ secrets.ACR_USERNAME_REVIEW }}
+      - run:
+          docker inspect --format='{{index .RepoDigests 0}}' delphaireview.azurecr.io/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
+          > image_sha.txt
+      - uses: actions/upload-artifact@v1
+        with:
+          name: image_sha
+          path: image_sha.txt
   deploy:
     needs: build_image
     runs-on: ubuntu-latest
     steps:
-    - name: Download Image_sha
-      uses: actions/download-artifact@v1
-      with:
-        name: image_sha
-    - name: Set SHA value
-      run: echo ::set-env name=IMAGE_SHA::$(cat image_sha/image_sha.txt)
-      shell: bash
-    - uses: actions/checkout@v2
-    - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk
-        -F / '{print $2}' | sed -e "s/:refs//")
-      shell: bash
-    - uses: rlespinasse/github-slug-action@master
-    - uses: delphai/delphai-kubernetes-deployment@master
-      with:
-        client_id: ${{ secrets.ARM_CLIENT_ID_REVIEW }}
-        client_secret: ${{ secrets.ARM_CLIENT_SECRET_REVIEW }}
-        delphai_enviroment: review
-        grpcport: 8080
-        httpport: 7070
-        image_sha: ${{ env.IMAGE_SHA }}
-        is_ui: false
-        tenant_id: ${{ secrets.ARM_TENANT_ID_REVIEW }}
+      - run: echo "ACTIONS_ALLOW_UNSECURE_COMMANDS=true" >> $GITHUB_ENV
+      - name: Download Image_sha
+        uses: actions/download-artifact@v1
+        with:
+          name: image_sha
+      - name: Set SHA value
+        run: echo ::set-env name=IMAGE_SHA::$(cat image_sha/image_sha.txt)
+        shell: bash
+      - uses: actions/checkout@v2
+      - run:
+          echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk
+          -F / '{print $2}' | sed -e "s/:refs//")
+        shell: bash
+      - uses: rlespinasse/github-slug-action@v3.x
+      - uses: delphai/delphai-kubernetes-deployment@master
+        with:
+          client_id: ${{ secrets.ARM_CLIENT_ID_REVIEW }}
+          client_secret: ${{ secrets.ARM_CLIENT_SECRET_REVIEW }}
+          delphai_enviroment: review
+          grpcport: 8080
+          httpport: 7070
+          image_sha: ${{ env.IMAGE_SHA }}
+          is_ui: false
+          tenant_id: ${{ secrets.ARM_TENANT_ID_REVIEW }}
 name: review
 'on':
   push:
     branches:
-    - '*'
-    - '!master'
+      - '*'
+      - '!master'

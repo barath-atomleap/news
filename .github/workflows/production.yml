@@ -1,70 +1,63 @@
+# dig -t txt variant.delphai.com +short | tr -d '"'
+
 name: production
 
 on:
   push:
     tags:
-      - "*"
+      - '*'
 
 jobs:
   build_image:
     runs-on: ubuntu-latest
     steps:
+      - run: echo "VARIANT=$(dig -t txt variant.delphai.com +short | tr -d '\"' | tr a-z A-Z)" >> $GITHUB_ENV
+      - run: echo "current variant is ${VARIANT}"
+      - run: echo "ACR_PASSWORD_SECRET=ACR_PASSWORD_${VARIANT}" >> $GITHUB_ENV
+      - run: echo "ACR_REGISTRY_SECRET=ACR_REGISTRY_${VARIANT}" >> $GITHUB_ENV
+      - run: echo "ACR_USERNAME_SECRET=ACR_USERNAME_${VARIANT}" >> $GITHUB_ENV
       - uses: actions/checkout@v2
-      - id: get_version
-        run: echo ::set-env name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
-      - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")
+      - run: echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//") >> $GITHUB_ENV
         shell: bash
+      - uses: rlespinasse/github-slug-action@v3.x
       - uses: mr-smithers-excellent/docker-build-push@v3
         with:
           image: ${{ env.REPOSITORY_NAME }}
-          tag: ${{ env.VERSION }}
-          registry: ${{ secrets.ACR_REGISTRY_PRODUCTION }}
-          username: ${{ secrets.ACR_USERNAME_PRODUCTION }}
-          password: ${{ secrets.ACR_PASSWORD_PRODUCTION }}
-  deploy_to_kubernetes:
-    runs-on: ubuntu-latest
+          password: ${{ secrets[env.ACR_PASSWORD_SECRET] }}
+          registry: ${{ secrets[env.ACR_REGISTRY_SECRET] }}
+          tag: ${{ env.GITHUB_REF_SLUG }}
+          buildArgs: 'SSH_PRIVATE_KEY=${{ secrets.SSH_KEY }}'
+          username: ${{ secrets[env.ACR_USERNAME_SECRET] }}
+      - run:
+          docker inspect --format='{{index .RepoDigests 0}}' ${{ secrets[env.ACR_REGISTRY_SECRET] }}/${REPOSITORY_NAME}:${GITHUB_REF_SLUG}
+          > image_sha_${VARIANT}.txt
+      - uses: actions/upload-artifact@v1
+        with:
+          name: image_sha_${{env.VARIANT}}
+          path: image_sha_${{env.VARIANT}}.txt
+  deploy:
     needs: build_image
+    runs-on: ubuntu-latest
     steps:
-      - uses: azure/aks-set-context@v1
+      - run: echo "VARIANT=$(dig -t txt variant.delphai.com +short | tr -d '\"' | tr a-z A-Z)" >> $GITHUB_ENV
+      - name: Download Image_sha
+        uses: actions/download-artifact@v1
         with:
-          creds: "${{ secrets.AZURE_CREDENTIALS_PRODUCTION }}"
-          resource-group: delphai-production
-          cluster-name: delphai-production
-      - id: get_version
-        run: echo ::set-env name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
-      - run: echo ::set-env name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")
-      - run: |
-          cat << EOF > main.tf.template
-          terraform {
-            backend "azurerm" {
-              resource_group_name  = "base-infrastructure-terraform"
-              key                  = "${REPOSITORY_NAME}.tfstate"
-              storage_account_name = "delphaiproduction"
-              container_name       = "delphai-production-terraform-state"
-            }
-          }
-          module "delphai-app" {
-            source      = "github.com/delphai/infrastructure//modules/delphai-app"
-            app_port    = 8080
-            delphai_env = "production"
-            image       = "delphaiproduction.azurecr.io/${REPOSITORY_NAME}:${VERSION}"
-            name        = "${REPOSITORY_NAME}"
-            namespace   = "delphai"
-            has_ingress = false
-          }
-          EOF
-      - uses: nowactions/envsubst@v1
+          name: image_sha_${{env.VARIANT}}
+      - name: Set SHA value
+        run: echo IMAGE_SHA=$(cat image_sha_${VARIANT}/image_sha_${VARIANT}.txt) >> $GITHUB_ENV
+        shell: bash
+      - uses: actions/checkout@v2
+      - run: echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//") >> $GITHUB_ENV
+        shell: bash
+      - uses: rlespinasse/github-slug-action@v3.x
+      - uses: delphai/delphai-kubernetes-deployment@master
         with:
-          input: ./main.tf.template
-          output: ./main.tf
-      - run: mkdir -p ~/.kube && cp ${KUBECONFIG} ~/.kube/config
-      - uses: hashicorp/setup-terraform@v1
-      - uses: azure/setup-kubectl@v1
-      - run: kubectl create ns delphai --dry-run=client --output yaml | kubectl apply -f -
-      - run: terraform init && terraform apply -auto-approve
-        env:
-          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID_PRODUCTION }}
-          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET_PRODUCTION }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID_PRODUCTION }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID_PRODUCTION }}
-      - run: kubectl patch deployment ${REPOSITORY_NAME} --namespace delphai -p "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"date\":\"`date +'%s'`\"}}}}}"
+          client_id: ${{ secrets.ARM_CLIENT_ID_PRODUCTION }}
+          client_secret: ${{ secrets.ARM_CLIENT_SECRET_PRODUCTION }}
+          delphai_enviroment: ${{ env.VARIANT }}
+          grpcport: 8080
+          httpport: 7070
+          image_sha: ${{ env.IMAGE_SHA }}
+          is_ui: false
+          tenant_id: ${{ secrets.ARM_TENANT_ID_PRODUCTION }}
