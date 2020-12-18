@@ -3,3 +3,4 @@ database:
 
 blob_storage:
   connection_string: ${env:AZURE_BLOB}
+  container: "scraped-data"
