@@ -194,8 +194,16 @@ def save_article(companies: list,
             content = content.replace(mention, company_to_mask_dict[mention])
           logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
           title = translate_to_english(title)
+          if title is None:
+            logging.error('Title could not be translated')
+            return {'title': title, 'content': content,
+                    'message': 'Error while translating the article title'}
           original_content = content
           content = translate_to_english(content)
+          if content is None:
+            logging.error('Content could not be translated')
+            return {'title': title, 'content': content,
+                    'message': 'Error while translating the article content'}
           is_translated = True
           logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
           for mention in company_to_mask_dict:
