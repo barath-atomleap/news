@@ -49,7 +49,7 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     html = trafilatura.fetch_url(url)
     if not html:
       data = {'url': url}
-      url = 'https://delphai-source-scraper.azurewebsites.net/api/scrape-single-url'
+      url = get_config('single_scraper.url')
       x = requests.post(url, json=data)
       html = base64.b64decode(x.json()['html']).decode('utf-8')
 
@@ -112,8 +112,8 @@ def get_company_nes_from_article(article: str):
   :param article: body of news article
   :return: dictionary with organizations discovered by spacy
   """
-  scoring_uri = 'https://azure-ml.delphai.red/api/v1/service/ner-tagger/score'
-  key = '1r4amNny4qvglU3pvJQYMbizsE0hjQx2'
+  scoring_uri = get_config('english_ner.uri')
+  key = get_config('english_ner.key')
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
@@ -134,8 +134,8 @@ def get_company_nes_from_ger_article(article: str):
   :param article: body of german news article
   :return: dictionary with organizations discovered by spacy
   """
-  scoring_uri = 'https://azure-ml.delphai.red/api/v1/service/ger-ner-tagger/score'
-  key = 'ZqV6GVNHrPQpvMppo9LZ984DlObVPtxR'
+  scoring_uri = get_config('german_ner.uri')
+  key = get_config('german_ner.key')
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
@@ -202,7 +202,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
     try:
       logging.info("Name matcher input: {}".format(all_entities))
       ner_matching_response = requests.post(
-          'https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match',
+          get_config('nel.url'),
           json={
               'names': all_entities
           }).json()
