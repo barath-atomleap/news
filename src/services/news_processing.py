@@ -12,6 +12,7 @@ import json
 import requests
 from delphai_utils.logging import logging
 from delphai_utils.db import db_sync as db
+from delphai_utils.config import get_config
 
 nltk.download('punkt')
 
