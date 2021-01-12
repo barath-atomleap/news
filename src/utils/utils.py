@@ -31,7 +31,7 @@ def is_text_in_english(text: str):
     """
 
   try:
-    response = requests.post(get_config('language_detector.uri'),
+    response = requests.post(get_config('language_detector.url'),
                              json={
                                  "text": text
                              }).json()
@@ -55,7 +55,7 @@ def check_language(text: str):
     """
 
   try:
-    response = requests.post(get_config('language_detector.uri'),
+    response = requests.post(get_config('language_detector.url'),
                              json={
                                  "text": text
                              }).json()
