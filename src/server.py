@@ -2,6 +2,7 @@ import sys
 sys.path.append('./src/proto')
 
 from delphai_utils.grpc_server import create_grpc_server, start_server
+from delphai_utils.authorization import authorize
 import proto.news_pb2 as service_pb2
 import proto.news_pb2_grpc as service_pb2_grpc
 from services.articles import articles_data, save_article
@@ -15,6 +16,7 @@ logging.getLogger('azure').setLevel(logging.ERROR)
 
 
 class News(service_pb2_grpc.News):
+  @authorize(['news'])
   async def get_articles(self, request: service_pb2.ArticlesRequest, context):
     company_id = request.company_id
     start_row = request.start_row if request.start_row else 1

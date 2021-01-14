@@ -6,7 +6,7 @@ authors = ["leofj <leonardo@delphai.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-delphai-utils = {extras = ["config", "database", "grpc"], version = "^0.1.45"}
+delphai-utils = {extras = ["config", "database", "grpc"], version = "^0.2.9"}
 grpcio = "*"
 grpcio-tools = "*"
 pymongo = "*"
@@ -40,7 +40,7 @@ start = "python src/server.py"
 codegen = [
   {cmd = "mkdir -p ./src"},
   {cmd = "protodep up --force"},
-  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"}, 
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"},
   {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --python_out=./src/proto ./.vendor/**/*.proto"}
 ]
 swaggergen = [
