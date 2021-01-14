@@ -27,3 +27,23 @@ server:
 blob_storage:
   connection_string: ${kube:blob-storage/connection-string}
   container: "scraped-data"
+
+single_scraper:
+  url: https://delphai-source-scraper.azurewebsites.net/api/scrape-single-url
+
+english_ner:
+  uri: https://azure-ml.delphai.red/api/v1/service/ner-tagger/score
+  key: 1r4amNny4qvglU3pvJQYMbizsE0hjQx2
+
+german_ner:
+  uri: https://azure-ml.delphai.red/api/v1/service/ger-ner-tagger/score
+  key: ZqV6GVNHrPQpvMppo9LZ984DlObVPtxR
+
+nel:
+  url: https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match
+
+language_detector:
+  url: https://api.delphai.blue/translation/delphai.Translation.detect_language
+
+translator:
+  url: https://api.delphai.blue/translation/delphai.Translation.translate

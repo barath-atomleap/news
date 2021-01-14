@@ -31,7 +31,7 @@ def is_text_in_english(text: str):
     """
 
   try:
-    response = requests.post("https://api.delphai.blue/translation/delphai.Translation.detect_language",
+    response = requests.post(get_config('language_detector.url'),
                              json={
                                  "text": text
                              }).json()
@@ -55,7 +55,7 @@ def check_language(text: str):
     """
 
   try:
-    response = requests.post("https://api.delphai.blue/translation/delphai.Translation.detect_language",
+    response = requests.post(get_config('language_detector.url'),
                              json={
                                  "text": text
                              }).json()
@@ -76,7 +76,7 @@ def translate_to_english(text: str):
   retry_count = 15
   english_text = None
   try:
-    response = requests.post("https://api.delphai.blue/translation/delphai.Translation.translate", json={
+    response = requests.post(get_config('translator.url'), json={
         "text": text, "method": 'azure'
     }).json()
 
