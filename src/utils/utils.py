@@ -2,6 +2,7 @@ from delphai_utils.logging import logging
 import requests
 import cld3
 from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceExistsError
 from delphai_utils.config import get_config
 from googletrans import Translator
 
@@ -19,6 +20,9 @@ def save_blob(url, text):
 
     # Upload the created file
     blob_client.upload_blob(text)
+  except ResourceExistsError as e:
+    # logging.warning(f'Existing blob: {e}')
+    pass
   except Exception as e:
     logging.error('Exception:', e)
   return url
