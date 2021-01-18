@@ -36,8 +36,8 @@ english_ner:
   key: 1r4amNny4qvglU3pvJQYMbizsE0hjQx2
 
 german_ner:
-  uri: https://azure-ml.delphai.red/api/v1/service/ger-ner-tagger/score
-  key: ZqV6GVNHrPQpvMppo9LZ984DlObVPtxR
+  uri: https://azure-ml.delphai.red/api/v1/service/ger-ner/score
+  key: AhCgR7uzrXGCMKi9oVbd9kxC6RYVfk6J
 
 nel:
   url: https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match
