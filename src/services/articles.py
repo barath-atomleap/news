@@ -151,7 +151,7 @@ def save_article(companies: list,
     # if not boilerplated input, process and boilerplate article
     if not title and not content:
       title, content, date = news_boilerplater(html=html, url=page_url, date=date)
-    logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
+    logging.info(f'[Original] Title={title}, Content={content[:500]} ... , Date={date}')
     if test_mode:
       return {'title': title, 'content': content, 'date': date, 'message': 'test_mode enabled'}
 
@@ -181,7 +181,7 @@ def save_article(companies: list,
           if content_lang == 'de':
             nes = get_company_nes_from_ger_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
-            logging.info(f'German nes:{nes}')
+            logging.info(f'German organizations:{nes}')
           else:
             logging.warning(f'There is no available NER model for the language of the current article '
                             f'({content_lang}).')
@@ -192,7 +192,7 @@ def save_article(companies: list,
           for mention in company_to_mask_dict:
             title = title.replace(mention, company_to_mask_dict[mention])
             content = content.replace(mention, company_to_mask_dict[mention])
-          logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
+          logging.info(f'[Masked] Title={title}, Content={content[:500]} ... , Date={date}')
           title = translate_to_english(title)
           if title is None:
             logging.error('Title could not be translated')
@@ -205,11 +205,11 @@ def save_article(companies: list,
             return {'title': title, 'content': content,
                     'message': 'Error while translating the article content'}
           is_translated = True
-          logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
+          logging.info(f'[Translated & Masked] Title={title}, Content={content[:500]} ... , Date={date}')
           for mention in company_to_mask_dict:
             title = title.replace(company_to_mask_dict[mention], mention)
             content = content.replace(company_to_mask_dict[mention], mention)
-          logging.info(f'Title={title}, Content={content[:500]} ... , Date={date}')
+          logging.info(f'[Translated & Unmasked] Title={title}, Content={content[:500]} ... , Date={date}')
 
         # find sentences with input company mentions. if companies are given then we assume they will appear in the text
         company_to_descr_dict = create_company_to_descr_dict(companies=companies, title=title, content=content)
@@ -219,19 +219,19 @@ def save_article(companies: list,
           # get named entities for English articles
           if content_lang == 'en':
             nes = get_company_nes_from_article(article="{}. {}".format(title, content)) if get_named_entities else None
-            logging.info(f'English named entities:{nes}')
+            logging.info(f'English organizations:{nes}')
 
           # if ner service didn't return an empty reponse and if article has entities
           if nes is not None:
             # get organization names
             organization_names = [i[0] for i in nes]
-            logging.info(f"Named entities={nes}, Organizations={organization_names}")
+            logging.info(f"Organizations={organization_names}")
             # match them to DB
             matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
               named_entities=organization_names, hard_matching=False)
             # if matching linked at least one company to our database
             if matched_companies and matched_urls and matched_ids and company_mentions:
-              logging.info(f"Linked company names={matched_companies} with urls={matched_urls}")
+              logging.info(f"Linked to companies={matched_companies} with urls={matched_urls}")
               # find the mentions of the companies discovered by ner
               new_companies, company_to_descr_dict = enrich_company_to_descr_dict(
                 company_to_descr_dict=company_to_descr_dict,
@@ -243,12 +243,12 @@ def save_article(companies: list,
               # logging.info(f'input companies:{companies}')
               companies = companies + new_companies
               # logging.info(f'new_companies:{new_companies}')
-              logging.info(f'all companies:{companies}')
+              # logging.info(f'all companies:{companies}')
               unique_organization_names = set(organization_names)
-              logging.info(f'unique organizations:{unique_organization_names}')
+              # logging.info(f'unique organizations:{unique_organization_names}')
               unmatched_companies = [org for org in unique_organization_names if not(any(com['name'] == org for com in
                                                                                 companies))]
-              logging.info(f'unmatched_companies:{unmatched_companies}')
+              logging.info(f'Unmatched companies:{unmatched_companies}')
               message += f'Adding article to {len(new_companies)} more companies in delphai ({new_companies}).\n'
             else:
               logging.warning('Warning: No companies linked to our DB')

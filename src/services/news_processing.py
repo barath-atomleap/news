@@ -201,7 +201,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   # match nes to DB
   for i in range(0, post_retry_times):
     try:
-      logging.info("Name matcher input: {}".format(all_entities))
+      # logging.info("Name matcher input: {}".format(all_entities))
       ner_matching_response = requests.post(
           get_config('nel.url'),
           json={
@@ -215,7 +215,10 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
           }
           for r in ner_matching_response.get('results', [])
       }
-      logging.info(f'ner_matching_response:{ner_matching_response}')
+
+      logging.info('Matcher response:')
+      for result in ner_matching_response['results']:
+        logging.info(result)
       if ner_best_matches:
         # get company names from dict
         matched_names, matched_urls, matched_ids, company_mentions = get_names_of_matches(best_matches=ner_best_matches)
