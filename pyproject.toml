@@ -39,7 +39,7 @@ build-backend = "poetry.core.masonry.api"
 start = "python src/server.py"
 codegen = [
   {cmd = "mkdir -p ./src"},
-  {cmd = "protodep up --force"},
+  {cmd = "protodep up"},
   {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"},
   {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --python_out=./src/proto ./.vendor/**/*.proto"}
 ]
