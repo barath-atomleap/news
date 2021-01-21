@@ -41,7 +41,7 @@ codegen = [
   {cmd = "mkdir -p ./src"},
   {cmd = "protodep up"},
   {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"},
-  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --python_out=./src/proto ./.vendor/**/*.proto"}
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src/proto --python_out=./src/proto ./.vendor/**/*.proto"}
 ]
 swaggergen = [
   {cmd = "protoc -I./.vendor -I. --swagger_out . ./proto/*.proto"},

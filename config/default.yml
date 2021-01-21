@@ -47,3 +47,4 @@ language_detector:
 
 translator:
   url: https://api.delphai.blue/translation/delphai.Translation.translate
+  address: translation-grpc.translation:80

@@ -4,62 +4,62 @@ from unidecode import unidecode
 from bson import ObjectId
 import datetime
 from delphai_utils.formatting import clean_url
-from utils.utils import check_language, save_blob, is_text_in_english, translate_to_english
+from utils.utils import check_language, save_blob, translate_to_english
 from delphai_utils.logging import logging
-from delphai_utils.db import db_sync
-from .news_processing import match_nes_to_db_companies, news_boilerplater, get_company_nes_from_article, get_company_nes_from_ger_article
+from delphai_utils.db import db
+from .news_processing import match_nes_to_db_companies, news_boilerplater
 from .news_processing import create_company_to_descr_dict, enrich_company_to_descr_dict
+from .news_processing import get_company_nes_from_article, get_company_nes_from_ger_article
 
-db = db_sync
 news = db.news
 news.create_index('url')
 news.create_index([('company_id', 1), ('url', 1)], unique=True)
 
 
-def articles_data(company_id, start_row, fetch_count):
+async def articles_data(company_id, start_row, fetch_count):
   try:
     logging.info(f'Retrieving articles for {company_id} page {start_row}')
     skip = (start_row - 1) * fetch_count
 
     news_articles = news.aggregate([{
-      "$match": {
-        "company_id": ObjectId(company_id)
-      }
+        "$match": {
+            "company_id": ObjectId(company_id)
+        }
     }, {
-      "$project": {
-        "_id": 0,
-        "description": 1,
-        "mentions": 1,
-        "is_translated": 1,
-        "date": {
-          '$dateToString': {
-            'format': '%Y-%m-%d',
-            'date': {
-              '$toDate': '$date'
-            }
-          }
-        },
-        "title": 1,
-        "url": 1
-      }
+        "$project": {
+            "_id": 0,
+            "description": 1,
+            "mentions": 1,
+            "is_translated": 1,
+            "date": {
+                '$dateToString': {
+                    'format': '%Y-%m-%d',
+                    'date': {
+                        '$toDate': '$date'
+                    }
+                }
+            },
+            "title": 1,
+            "url": 1
+        }
     }, {
-      "$sort": {
-        "date": -1
-      }
+        "$sort": {
+            "date": -1
+        }
     }, {
-      "$facet": {
-        "total": [{
-          "$count": "count"
-        }],
-        "articles": [{
-          "$skip": skip
-        }, {
-          "$limit": int(fetch_count)
-        }]
-      }
+        "$facet": {
+            "total": [{
+                "$count": "count"
+            }],
+            "articles": [{
+                "$skip": skip
+            }, {
+                "$limit": int(fetch_count)
+            }]
+        }
     }])
 
-    results = list(news_articles)[0]
+    results = (await news_articles.to_list(1))[0]
     results['total'] = results['total'][0].get('count', 0) if len(results['total']) > 0 else 0
 
     return results
@@ -68,18 +68,18 @@ def articles_data(company_id, start_row, fetch_count):
     return {}
 
 
-def save_article(companies: list,
-                 page_url: str,
-                 html: str,
-                 test_mode: bool,
-                 source: str,
-                 date: str = '',
-                 get_named_entities: bool = False,
-                 no_products: bool = False,
-                 topic: str = '',
-                 title: str = '',
-                 content: str = '',
-                 add_only_english: bool = False):
+async def save_article(companies: list,
+                       page_url: str,
+                       html: str,
+                       test_mode: bool,
+                       source: str,
+                       date: str = '',
+                       get_named_entities: bool = False,
+                       no_products: bool = False,
+                       topic: str = '',
+                       title: str = '',
+                       content: str = '',
+                       add_only_english: bool = False):
   """
   Receives a page from a news source, its html content and adds this news article to our DB.
   If a company from our DB is mentioned in this article, then the article is assigned to the company and it will
@@ -100,9 +100,8 @@ def save_article(companies: list,
       add_only_english: add only articles in English
   Returns: article ids in DB
   """
-
-  def create_data_object(title, description, mentions, date, is_translated, content_ref, original_content_ref,
-                         html_ref, source, topic, lang, unmatched_companies):
+  def create_data_object(title, description, mentions, date, is_translated, content_ref, original_content_ref, html_ref,
+                         source, topic, lang, unmatched_companies):
     """
     Create object to ingest to the news db collection.
     """
@@ -150,7 +149,7 @@ def save_article(companies: list,
 
     # if not boilerplated input, process and boilerplate article
     if not title and not content:
-      title, content, date = news_boilerplater(html=html, url=page_url, date=date)
+      title, content, date = await news_boilerplater(html=html, url=page_url, date=date)
     logging.info(f'[Original] Title={title}, Content={content[:500]} ... , Date={date}')
     if test_mode:
       return {'title': title, 'content': content, 'date': date, 'message': 'test_mode enabled'}
@@ -164,7 +163,7 @@ def save_article(companies: list,
         unmatched_companies = False
 
         # translate text if necessary
-        content_lang = check_language(content)
+        content_lang = await check_language(content)
         nes = None
         multilingual_ner_done = False
         company_to_mask_dict = dict()
@@ -179,7 +178,7 @@ def save_article(companies: list,
               mask_count += 1
           # check if language is German and use German ner in this case
           if content_lang == 'de':
-            nes = get_company_nes_from_ger_article(
+            nes = await get_company_nes_from_ger_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
             logging.info(f'German organizations:{nes}')
           else:
@@ -193,17 +192,15 @@ def save_article(companies: list,
             title = title.replace(mention, company_to_mask_dict[mention])
             content = content.replace(mention, company_to_mask_dict[mention])
           logging.info(f'[Masked] Title={title}, Content={content[:500]} ... , Date={date}')
-          title = translate_to_english(title)
+          title = await translate_to_english(title)
           if title is None:
             logging.error('Title could not be translated')
-            return {'title': title, 'content': content,
-                    'message': 'Error while translating the article title'}
+            return {'title': title, 'content': content, 'message': 'Error while translating the article title'}
           original_content = content
-          content = translate_to_english(content)
+          content = await translate_to_english(content)
           if content is None:
             logging.error('Content could not be translated')
-            return {'title': title, 'content': content,
-                    'message': 'Error while translating the article content'}
+            return {'title': title, 'content': content, 'message': 'Error while translating the article content'}
           is_translated = True
           logging.info(f'[Translated & Masked] Title={title}, Content={content[:500]} ... , Date={date}')
           for mention in company_to_mask_dict:
@@ -212,13 +209,14 @@ def save_article(companies: list,
           logging.info(f'[Translated & Unmasked] Title={title}, Content={content[:500]} ... , Date={date}')
 
         # find sentences with input company mentions. if companies are given then we assume they will appear in the text
-        company_to_descr_dict = create_company_to_descr_dict(companies=companies, title=title, content=content)
+        company_to_descr_dict = await create_company_to_descr_dict(companies=companies, title=title, content=content)
 
         # link input and discovered companies to our company database
         try:
           # get named entities for English articles
           if content_lang == 'en':
-            nes = get_company_nes_from_article(article="{}. {}".format(title, content)) if get_named_entities else None
+            nes = await get_company_nes_from_article(
+                article="{}. {}".format(title, content)) if get_named_entities else None
             logging.info(f'English organizations:{nes}')
 
           # if ner service didn't return an empty reponse and if article has entities
@@ -227,18 +225,18 @@ def save_article(companies: list,
             organization_names = [i[0] for i in nes]
             logging.info(f"Organizations={organization_names}")
             # match them to DB
-            matched_companies, matched_urls, matched_ids, company_mentions = match_nes_to_db_companies(
-              named_entities=organization_names, hard_matching=False)
+            matched_companies, matched_urls, matched_ids, company_mentions = await match_nes_to_db_companies(
+                named_entities=organization_names, hard_matching=False)
             # if matching linked at least one company to our database
             if matched_companies and matched_urls and matched_ids and company_mentions:
               logging.info(f"Linked to companies={matched_companies} with urls={matched_urls}")
               # find the mentions of the companies discovered by ner
               new_companies, company_to_descr_dict = enrich_company_to_descr_dict(
-                company_to_descr_dict=company_to_descr_dict,
-                company_mentions=company_mentions,
-                company_ids=matched_ids,
-                title=title,
-                content=content)
+                  company_to_descr_dict=company_to_descr_dict,
+                  company_mentions=company_mentions,
+                  company_ids=matched_ids,
+                  title=title,
+                  content=content)
               # include them in `companies` and the company-article pairs later on in the DB
               # logging.info(f'input companies:{companies}')
               companies = companies + new_companies
@@ -246,8 +244,9 @@ def save_article(companies: list,
               # logging.info(f'all companies:{companies}')
               unique_organization_names = set(organization_names)
               # logging.info(f'unique organizations:{unique_organization_names}')
-              unmatched_companies = [org for org in unique_organization_names if not(any(com['name'] == org for com in
-                                                                                companies))]
+              unmatched_companies = [
+                  org for org in unique_organization_names if not (any(com['name'] == org for com in companies))
+              ]
               logging.info(f'Unmatched companies:{unmatched_companies}')
               message += f'Adding article to {len(new_companies)} more companies in delphai ({new_companies}).\n'
             else:
@@ -260,10 +259,10 @@ def save_article(companies: list,
         if companies:
           try:
             if html:
-              html_ref = save_blob('news/html/' + clean_url(page_url), html)
-            content_ref = save_blob('news/content/' + clean_url(page_url), content)
+              html_ref = await save_blob('news/html/' + clean_url(page_url), html)
+            content_ref = await save_blob('news/content/' + clean_url(page_url), content)
             if original_content:
-              original_content_ref = save_blob('news/original_content/' + clean_url(page_url), original_content)
+              original_content_ref = await save_blob('news/original_content/' + clean_url(page_url), original_content)
           except Exception as e:
             logging.error(f'Error saving to blob storage: {e}')
 
@@ -289,11 +288,11 @@ def save_article(companies: list,
                                       topic=topic,
                                       lang=content_lang,
                                       unmatched_companies=[])
-            article_id = db.news.update_one({
-              'company_id': ObjectId(company['_id']),
-              'url': page_url
+            article_id = await news.update_one({
+                'company_id': ObjectId(company['_id']),
+                'url': page_url
             }, {'$set': data},
-              upsert=True)
+                                               upsert=True)
 
             if article_id.upserted_id:
               article_id_list.append(str(article_id.upserted_id))
@@ -301,23 +300,23 @@ def save_article(companies: list,
               message += f'{page_url} added to DB.\n'
             else:
               message += f'{page_url} already exists.\n'
-              article_id = str(db.news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
+              article_id = str(await news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
 
             # calling products service
-            if not no_products:
-              try:
-                # TODO: move this outside the company iteration, it's the same for every company
-                prod_data = {'article_id': str(article_id), 'title': title, 'content': content}
-                url = 'https://api.delphai.live/delphai.products.Products.add_products'
-                product_request = requests.post(url, json=prod_data)
-                # if product_request:
-                #   all_product_article_descriptions.append(product_request.text)
-                # else:
-                #   all_product_article_descriptions.append("")
-                #   logging.info("Product detection model returned no text")
-              except Exception as e:
-                logging.error(f'Error getting product information: {e}')
-                continue
+            # if not no_products:
+            #   try:
+            # TODO: move this outside the company iteration, it's the same for every company
+            # prod_data = {'article_id': str(article_id), 'title': title, 'content': content}
+            # url = 'https://api.delphai.live/delphai.products.Products.add_products'
+            # product_request = requests.post(url, json=prod_data)
+            # if product_request:
+            #   all_product_article_descriptions.append(product_request.text)
+            # else:
+            #   all_product_article_descriptions.append("")
+            #   logging.info("Product detection model returned no text")
+            # except Exception as e:
+            #   logging.error(f'Error getting product information: {e}')
+            #   continue
           else:
             message += 'Company name not found in article.\n'
             logging.info(f'{company} not found in article.')
@@ -336,28 +335,28 @@ def save_article(companies: list,
                                     topic='',
                                     lang='',
                                     unmatched_companies=list(set(unmatched_companies)))
-          db.news_unmatched.update_one({'url': page_url}, {'$set': data}, upsert=True)
+          await db.news_unmatched.update_one({'url': page_url}, {'$set': data}, upsert=True)
 
         if company_article_match_found:
           return {
-            'article_ids': article_id_list,
-            'title': title,
-            'content': content,
-            'descriptions': all_article_descriptions,
-            'product_descriptions': all_product_article_descriptions,
-            'message': f'Added {len(article_id_list)} company-article pairs to DB.'
+              'article_ids': article_id_list,
+              'title': title,
+              'content': content,
+              'descriptions': all_article_descriptions,
+              'product_descriptions': all_product_article_descriptions,
+              'message': f'Added {len(article_id_list)} company-article pairs to DB.'
           }
       except Exception as e:
         logging.error(f'Error while processing and saving the article: {e}')
         return {'title': title, 'content': content, 'message': f'Error while processing and saving the article: {e}'}
     if title is None:
-      message += f'Article title is empty for the given url.'
+      message += 'Article title is empty for the given url.'
       logging.info(message)
     if content is None:
-      message += f'Article content is empty for the given url.'
+      message += 'Article content is empty for the given url.'
       logging.info(message)
     if date is None:
-      message += f'Article date is empty for the given url.'
+      message += 'Article date is empty for the given url.'
       logging.info(message)
     return {'message': message}
 

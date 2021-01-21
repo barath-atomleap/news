@@ -7,3 +7,7 @@ proto_outdir = "./.vendor"
 [[dependencies]]
   target = "github.com/googleapis/api-common-protos"
   branch = "master"
+
+[[dependencies]]
+  target = "github.com/delphai/translation"
+  branch = "master"
