@@ -9,4 +9,4 @@ names_matcher:
   address: names-matcher.grpc.delphai.red:80
 
 translation:
-  address: translation.grpc.delphai.blue:80
+  address: translation.grpc.delphai.red:80

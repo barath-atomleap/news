@@ -88,7 +88,7 @@ async def translate_to_english(text: str):
   try:
     req = TranslateRequest(text=text, method='azure')
     translated_text: TranslateResponse = await translation_client.translate(req)
-    # response = await requests.post(get_config('translator.url'), json={"text": text, "method": 'azure'}).json()
+    # response = requests.post(get_config('translator.url'), json={"text": text, "method": 'azure'}).json()
 
     return translated_text.text
   except Exception as e:
