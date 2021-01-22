@@ -39,13 +39,13 @@ german_ner:
   uri: https://azure-ml.delphai.red/api/v1/service/ger-ner/score
   key: AhCgR7uzrXGCMKi9oVbd9kxC6RYVfk6J
 
-nel:
+names_matcher:
   url: https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match
   address: names-matcher-grpc.names-matcher:80
 
 language_detector:
   url: https://api.delphai.blue/translation/delphai.Translation.detect_language
 
-translator:
+translation:
   url: https://api.delphai.blue/translation/delphai.Translation.translate
   address: translation-grpc.translation:80

@@ -21,8 +21,8 @@ from grpc.experimental.aio import insecure_channel
 nltk.download('punkt')
 
 post_retry_times = 5
-nel_address = get_config('nel.address')
-channel = insecure_channel(nel_address)
+names_matcher_address = get_config('names_matcher.address')
+channel = insecure_channel(names_matcher_address)
 nel_client = NamesMatcherStub(channel)
 
 

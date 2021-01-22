@@ -5,8 +5,8 @@ blob_storage:
   connection_string: ${env:AZURE_BLOB}
   container: "scraped-data"
 
-nel:
+names_matcher:
   address: names-matcher.grpc.delphai.red:80
 
-translator:
+translation:
   address: translation.grpc.delphai.blue:80

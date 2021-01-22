@@ -16,7 +16,7 @@ news.create_index('url')
 news.create_index([('company_id', 1), ('url', 1)], unique=True)
 
 
-async def articles_data(company_id, start_row, fetch_count):
+async def get_articles(company_id, start_row, fetch_count):
   try:
     logging.info(f'Retrieving articles for {company_id} page {start_row}')
     skip = (start_row - 1) * fetch_count
