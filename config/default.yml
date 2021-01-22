@@ -41,6 +41,7 @@ german_ner:
 
 nel:
   url: https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match
+  address: names-matcher-grpc.names-matcher:80
 
 language_detector:
   url: https://api.delphai.blue/translation/delphai.Translation.detect_language

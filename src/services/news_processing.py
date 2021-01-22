@@ -10,16 +10,23 @@ import nltk
 from fuzzywuzzy import fuzz
 import json
 import requests
+import httpx
+from proto.proto.names_matcher_pb2_grpc import NamesMatcherStub
+from proto.proto.names_matcher_pb2 import NamesMatchRequest, NamesMatchResponse
 from delphai_utils.logging import logging
-from delphai_utils.db import db_sync as db
+from delphai_utils.db import db
 from delphai_utils.config import get_config
+from grpc.experimental.aio import insecure_channel
 
 nltk.download('punkt')
 
 post_retry_times = 5
+nel_address = get_config('nel.address')
+channel = insecure_channel(nel_address)
+nel_client = NamesMatcherStub(channel)
 
 
-def news_boilerplater(html: str = '', url: str = '', date: str = ''):
+async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
   """
   Receives a web page from a news source with `html` contents.
   Returns the title, text content and publication date of this news entry.
@@ -47,12 +54,19 @@ def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     return text.strip()
 
   if not html and url:
-    html = trafilatura.fetch_url(url)
-    if not html:
-      data = {'url': url}
-      url = get_config('single_scraper.url')
-      x = requests.post(url, json=data)
-      html = base64.b64decode(x.json()['html']).decode('utf-8')
+    async with httpx.AsyncClient() as client:
+      html = (await client.get(url)).text
+      if not html:
+        single_scraper_url = get_config('single_scraper.url')
+        response = await client.post(single_scraper_url, json={'url': url})
+        html = base64.b64decode(response.json()['html']).decode('utf-8')
+
+    # html = trafilatura.fetch_url(url)
+    # if not html:
+    #   data = {'url': url}
+    #   url = get_config('single_scraper.url')
+    #   x = requests.post(url, json=data)
+    #   html = base64.b64decode(x.json()['html']).decode('utf-8')
 
   # logging.info(f'html after: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
@@ -107,7 +121,7 @@ def get_company_info_from_article(company_name: str, content: str):
     return ""
 
 
-def get_company_nes_from_article(article: str):
+async def get_company_nes_from_article(article: str):
   """
   Given a news article, it returns the company mentions identified as named entities.
   :param article: body of news article
@@ -118,18 +132,21 @@ def get_company_nes_from_article(article: str):
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
-  for i in range(0, post_retry_times):
-    try:
-      resp = requests.post(scoring_uri, input_data, headers=headers)
-      mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
-      logging.info(f'Mentions dict:{mention_dict}')
-      return mention_dict['ORG']
-    except json.decoder.JSONDecodeError as e:
-      logging.error(f"Calling the NER service caused an error: {e}. Retrying to do the post request another time.")
+  async with httpx.AsyncClient() as client:
+    for i in range(0, post_retry_times):
+      try:
+        # resp = requests.post(scoring_uri, input_data, headers=headers)
+        resp = await client.post(scoring_uri, input_data, headers=headers)
+        mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
+        logging.info(f'Mentions dict:{mention_dict}')
+        return mention_dict['ORG']
+      except json.decoder.JSONDecodeError as e:
+        logging.error(f"Calling the NER service caused an error: {e}. Retrying to do the post request another time.")
+
   return None
 
 
-def get_company_nes_from_ger_article(article: str):
+async def get_company_nes_from_ger_article(article: str):
   """
   Given a german news article, it returns the company mentions identified as named entities.
   :param article: body of german news article
@@ -140,17 +157,20 @@ def get_company_nes_from_ger_article(article: str):
   input_data = json.dumps(article)
   # Set the content type and authorization
   headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {key}'}
-  for i in range(0, post_retry_times):
-    try:
-      resp = requests.post(scoring_uri, input_data, headers=headers)
-      mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
-      return mention_dict['ORG']
-    except json.decoder.JSONDecodeError as e:
-      logging.error(f"Calling the German NER service caused an error: {e}. Retrying to do the post request another time.")
+  async with httpx.AsyncClient() as client:
+    for i in range(0, post_retry_times):
+      try:
+        # resp = requests.post(scoring_uri, input_data, headers=headers)
+        resp = await client.post(scoring_uri, input_data, headers=headers)
+        mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
+        return mention_dict['ORG']
+      except json.decoder.JSONDecodeError as e:
+        logging.error(
+            f"Calling the German NER service caused an error: {e}. Retrying to do the post request another time.")
   return None
 
 
-def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
+async def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   """
     Given a list of organizations discovered in the text with the named entity recognizer, match them to our DB and
     find the corresponding companies by name and url.
@@ -202,22 +222,22 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   for i in range(0, post_retry_times):
     try:
       # logging.info("Name matcher input: {}".format(all_entities))
-      ner_matching_response = requests.post(
-          get_config('nel.url'),
-          json={
-              'names': all_entities
-          }).json()
+      req = NamesMatchRequest(names=all_entities)
+      ner_matching_response: NamesMatchResponse = await nel_client.match(req)
+      ner_matching_response = ner_matching_response.results if ner_matching_response.results else []
+
+      # ner_matching_response = requests.post(get_config('nel.url'), json={'names': all_entities}).json()
       # add name matching results to dict and filter them
       ner_best_matches = {
           r['name']: {
               'count': r['matches_count'],
               'best': r['matches'][0]
           }
-          for r in ner_matching_response.get('results', [])
+          for r in ner_matching_response
       }
 
       logging.info('Matcher response:')
-      for result in ner_matching_response['results']:
+      for result in ner_matching_response:
         logging.info(result)
       if ner_best_matches:
         # get company names from dict
@@ -230,7 +250,7 @@ def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
   return None, None, None, None
 
 
-def create_company_to_descr_dict(companies: list, title: str, content: str):
+async def create_company_to_descr_dict(companies: list, title: str, content: str):
   """
   Save the descriptions of the `companies` the way they are discussed in the article text. A description in
   this case is the text displayed in delphai under a url in the news tab.
@@ -247,19 +267,19 @@ def create_company_to_descr_dict(companies: list, title: str, content: str):
       try:
         company["_id"] = str(ObjectId(company["company"]))
       except:  # if "company" is not ObjectId, search for url
-        cmp = db.companies.find_one({'url': clean_url(company["company"])})
+        cmp = await db.companies.find_one({'url': clean_url(company["company"])})
         if cmp:
           company["_id"] = str(cmp["_id"])
         else:
           continue
       company_to_description_dict[company["_id"]] = get_company_info_from_article(company_name=company["name"],
                                                                                   content="{}. {}".format(
-                                                                                       content, title))
+                                                                                      content, title))
   return company_to_description_dict
 
 
-def enrich_company_to_descr_dict(company_to_descr_dict: dict, company_mentions: list, company_ids: list,
-                                 title: str, content: str):
+def enrich_company_to_descr_dict(company_to_descr_dict: dict, company_mentions: list, company_ids: list, title: str,
+                                 content: str):
   """
   Combine given companies and discovered companies in the company_desc dict.
   Args:
@@ -280,6 +300,6 @@ def enrich_company_to_descr_dict(company_to_descr_dict: dict, company_mentions: 
       company_dict["name"] = company_mention
       company_to_descr_dict[company_dict["_id"]] = get_company_info_from_article(company_name=company_mention,
                                                                                  content="{}. {}".format(
-                                                                                           content, title))
+                                                                                     content, title))
       new_companies.append(company_dict)
   return new_companies, company_to_descr_dict

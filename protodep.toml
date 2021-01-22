@@ -9,5 +9,9 @@ proto_outdir = "./.vendor"
   branch = "master"
 
 [[dependencies]]
+  target = "github.com/delphai/names-matcher"
+  branch = "master"
+
+[[dependencies]]
   target = "github.com/delphai/translation"
   branch = "master"

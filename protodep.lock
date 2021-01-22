@@ -14,6 +14,12 @@ proto_outdir = "./.vendor"
   path = ""
 
 [[dependencies]]
+  target = "github.com/delphai/names-matcher"
+  revision = "18e0b917e3dd35f0e098ccece5a69e776ae65a29"
+  branch = "master"
+  path = ""
+
+[[dependencies]]
   target = "github.com/delphai/translation"
   revision = "d778868214ae8bbe3bfee52b6e5fe40f8102ac90"
   branch = "master"
