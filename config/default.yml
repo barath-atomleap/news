@@ -43,7 +43,7 @@ nel:
   url: https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match
 
 language_detector:
-  url: https://api.delphai.blue/translation/delphai.Translation.detect_language
+  url: https://api.delphai.red/translation/delphai.Translation.detect_language
 
 translator:
-  url: https://api.delphai.blue/translation/delphai.Translation.translate
+  url: https://api.delphai.red/translation/delphai.Translation.translate
