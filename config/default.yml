@@ -44,8 +44,8 @@ names_matcher:
   address: names-matcher-grpc.names-matcher:80
 
 language_detector:
-  url: https://api.delphai.blue/translation/delphai.Translation.detect_language
+  url: https://api.delphai.red/translation/delphai.Translation.detect_language
 
 translation:
-  url: https://api.delphai.blue/translation/delphai.Translation.translate
+  url: https://api.delphai.red/translation/delphai.Translation.translate
   address: translation-grpc.translation:80
