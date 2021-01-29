@@ -76,29 +76,29 @@ async def check_language(text: str):
     return str(language[0])
 
 
-async def translate_to_english(text: str):
+async def translate_to_english(non_eng_text: str):
   """
     Translates given text to English.
-    :param text: article text (str)
+    :param non_eng_text: article text (str)
     :return: translated text (str)
     """
 
-  retry_count = 15
-  english_text = None
   try:
-    req = TranslateRequest(text=text, method='azure')
+    req = TranslateRequest(text=non_eng_text, method='azure')
     translated_text: TranslateResponse = await translation_client.translate(req)
     # response = requests.post(get_config('translator.url'), json={"text": text, "method": 'azure'}).json()
 
-    return translated_text.text
+    return translated_text.translation
   except Exception as e:
     logging.warning(f'translation service failed: {e}')
+    retry_count = 15
+    english_text = None
     for i in range(0, retry_count, 1):
       try:
         translator = Translator()
-        translated_text = translator.translate(text, dest="en")
+        translated_text = translator.translate(non_eng_text, dest="en")
         english_text = translated_text.text
         return english_text
       except AttributeError as e:
-        logging.error(f'Error translating with google trans: {e}. Text = {text[:100]}. Retry {i}')
+        logging.error(f'Error translating with google trans: {e}. Text = {non_eng_text[:100]}. Retry {i}')
     return english_text
