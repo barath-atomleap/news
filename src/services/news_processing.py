@@ -92,16 +92,16 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
       except Exception as e:
         logging.error(f'no title found for {url}:', e)
         article_title = article.title
-      return article_title, page_content, article_publication_date
+      return article_title, page_content, article_publication_date, html
     else:
       article_title = article.title
       article_publication_date = article.publish_date
-      return article_title, page_content, article_publication_date
+      return article_title, page_content, article_publication_date, html
   else:
     article_title = article.title
     article_publication_date = article.publish_date
     page_content = article.text
-    return article_title, page_content, article_publication_date
+    return article_title, page_content, article_publication_date, html
 
 
 def get_company_info_from_article(company_name: str, content: str):

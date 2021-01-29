@@ -149,7 +149,7 @@ async def save_article(companies: list,
 
     # if not boilerplated input, process and boilerplate article
     if not title and not content:
-      title, content, date = await news_boilerplater(html=html, url=page_url, date=date)
+      title, content, date, html = await news_boilerplater(html=html, url=page_url, date=date)
     logging.info(f'[Original] Title={title}, Content={content[:500]} ... , Date={date}')
     if test_mode:
       return {'title': title, 'content': content, 'date': date, 'message': 'test_mode enabled'}
