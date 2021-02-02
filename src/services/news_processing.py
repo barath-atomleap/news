@@ -136,7 +136,7 @@ async def get_company_nes_from_article(article: str):
     for i in range(0, post_retry_times):
       try:
         # resp = requests.post(scoring_uri, input_data, headers=headers)
-        resp = await client.post(scoring_uri, input_data, headers=headers)
+        resp = await client.post(scoring_uri, data=input_data, headers=headers)
         mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
         logging.info(f'Mentions dict:{mention_dict}')
         return mention_dict['ORG']
@@ -161,7 +161,7 @@ async def get_company_nes_from_ger_article(article: str):
     for i in range(0, post_retry_times):
       try:
         # resp = requests.post(scoring_uri, input_data, headers=headers)
-        resp = await client.post(scoring_uri, input_data, headers=headers)
+        resp = await client.post(scoring_uri, data=input_data, headers=headers)
         mention_dict = json.loads(resp.text)  # contains mentions of organizations, locations and persons
         return mention_dict['ORG']
       except json.decoder.JSONDecodeError as e:
