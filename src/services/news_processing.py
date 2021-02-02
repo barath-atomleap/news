@@ -53,6 +53,7 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
 
   if not html and url:
     try:
+      # TODO: use page-scraper
       async with httpx.AsyncClient() as client:
         html = (await client.get(url)).text
         if not html:

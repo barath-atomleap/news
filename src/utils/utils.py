@@ -42,7 +42,6 @@ async def is_text_in_english(text: str):
   try:
     req = DetectLanguageRequest(text=text)
     detected_lang: DetectLanguageResponse = await translation_client.detect_language(req)
-    # response = await requests.post(get_config('language_detector.url'), json={"text": text}).json()
     if detected_lang.language == "en":
       return True
     else:
@@ -65,7 +64,6 @@ async def check_language(text: str):
   try:
     req = DetectLanguageRequest(text=text)
     detected_lang: DetectLanguageResponse = await translation_client.detect_language(req)
-    # response = await requests.post(get_config('language_detector.url'), json={"text": text}).json()
     return detected_lang.language
   except Exception as e:
     logging.warning(f'lang detect failed: {e}')
@@ -83,7 +81,6 @@ async def translate_to_english(non_eng_text: str):
   try:
     req = TranslateRequest(text=non_eng_text, method='azure')
     translated_text: TranslateResponse = await translation_client.translate(req)
-    # response = requests.post(get_config('translator.url'), json={"text": text, "method": 'azure'}).json()
 
     return translated_text.translation
   except Exception as e:
