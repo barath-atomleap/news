@@ -17,6 +17,7 @@ from delphai_utils.logging import logging
 from delphai_utils.db import db
 from delphai_utils.config import get_config
 from delphai_utils.grpc_client import get_grpc_client
+from google.protobuf.json_format import MessageToDict
 
 nltk.download('punkt')
 
@@ -230,20 +231,18 @@ async def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
       # logging.info("Name matcher input: {}".format(all_entities))
       req = NamesMatchRequest(names=all_entities)
       ner_matching_response: NamesMatchResponse = await names_matcher_client.match(req)
-      ner_matching_response = ner_matching_response.results if ner_matching_response.results else []
-
       # ner_matching_response = requests.post(get_config('nel.url'), json={'names': all_entities}).json()
       # add name matching results to dict and filter them
+      results = MessageToDict(ner_matching_response, preserving_proto_field_name=True).get('results', [])
       ner_best_matches = {
           r['name']: {
               'count': r['matches_count'],
               'best': r['matches'][0]
           }
-          for r in ner_matching_response
+          for r in results
       }
-
       logging.info('Matcher response:')
-      for result in ner_matching_response:
+      for result in results:
         logging.info(result)
       if ner_best_matches:
         # get company names from dict

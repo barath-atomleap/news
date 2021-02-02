@@ -62,7 +62,7 @@ lxml = ["lxml"]
 
 [[package]]
 name = "cachetools"
-version = "4.2.0"
+version = "4.2.1"
 description = "Extensible memoizing collections and decorators"
 category = "main"
 optional = false
@@ -97,7 +97,7 @@ python-versions = "*"
 
 [[package]]
 name = "cleanco"
-version = "2.0.1"
+version = "2.1"
 description = "Python library to process company names"
 category = "main"
 optional = false
@@ -169,11 +169,11 @@ cffi = ">=1.12"
 six = ">=1.4.1"
 
 [package.extras]
-docs = ["sphinx (>=1.6.5,<1.8.0 || >1.8.0,<3.1.0 || >3.1.0,<3.1.1 || >3.1.1)", "sphinx-rtd-theme"]
+docs = ["sphinx (>=1.6.5,!=1.8.0,!=3.1.0,!=3.1.1)", "sphinx-rtd-theme"]
 docstest = ["doc8", "pyenchant (>=1.6.11)", "twine (>=1.12.0)", "sphinxcontrib-spelling (>=4.0.1)"]
 pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
 ssh = ["bcrypt (>=3.1.5)"]
-test = ["pytest (>=3.6.0,<3.9.0 || >3.9.0,<3.9.1 || >3.9.1,<3.9.2 || >3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,<3.79.2 || >3.79.2)"]
+test = ["pytest (>=3.6.0,!=3.9.0,!=3.9.1,!=3.9.2)", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
 
 [[package]]
 name = "cssselect"
@@ -201,7 +201,7 @@ python-versions = "*"
 
 [[package]]
 name = "delphai-utils"
-version = "0.2.10"
+version = "0.2.14"
 description = "delphai backend utilities"
 category = "main"
 optional = false
@@ -232,7 +232,7 @@ validate_email = {version = ">=1.3,<2.0", optional = true, markers = "extra == \
 
 [package.extras]
 config = ["omegaconf (>=2.0.2,<3.0.0)", "memoization (>=0.3.1,<0.4.0)", "python-dotenv (>=0.14.0,<0.15.0)", "kubernetes (>=11.0.0,<12.0.0)", "coloredlogs (>=14.0,<15.0)", "deepmerge (>=0.1.0,<0.2.0)", "keyring (>=21.5.0,<22.0.0)"]
-grpc = ["grpcio (>=1.32.0,<2.0.0)", "starlette (0.12.9)", "hypercorn (>=0.10.2,<0.11.0)", "validate_email (>=1.3,<2.0)", "ipaddress (>=1.0.23,<2.0.0)", "jinja2 (>=2.11.2,<3.0.0)", "markupsafe (>=1.1.1,<2.0.0)", "starlette-prometheus (>=0.7.0,<0.8.0)", "grpcio-health-checking (>=1.32.0,<2.0.0)", "grpcio-reflection (>=1.32.0,<2.0.0)", "googleapis-common-protos (>=1.52.0,<2.0.0)", "httpx (>=0.13.3,<0.14.0)", "python-jose (>=3.2.0,<4.0.0)"]
+grpc = ["grpcio (>=1.32.0,<2.0.0)", "starlette (==0.12.9)", "hypercorn (>=0.10.2,<0.11.0)", "validate_email (>=1.3,<2.0)", "ipaddress (>=1.0.23,<2.0.0)", "jinja2 (>=2.11.2,<3.0.0)", "markupsafe (>=1.1.1,<2.0.0)", "starlette-prometheus (>=0.7.0,<0.8.0)", "grpcio-health-checking (>=1.32.0,<2.0.0)", "grpcio-reflection (>=1.32.0,<2.0.0)", "googleapis-common-protos (>=1.52.0,<2.0.0)", "httpx (>=0.13.3,<0.14.0)", "python-jose (>=3.2.0,<4.0.0)"]
 elasticsearch = ["elasticsearch[async] (>=7.9.1,<8.0.0)"]
 database = ["motor (>=2.3.0,<3.0.0)"]
 
@@ -313,6 +313,17 @@ python-versions = "*"
 
 [package.extras]
 speedup = ["python-levenshtein (>=0.12)"]
+
+[[package]]
+name = "google"
+version = "3.0.0"
+description = "Python bindings to the Google search engine."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+beautifulsoup4 = "*"
 
 [[package]]
 name = "google-auth"
@@ -457,7 +468,7 @@ python-dateutil = ">=2.8.1"
 urllib3 = ">=1.25,<2"
 
 [package.extras]
-all = ["ciso8601 (>=2.1.3)", "dateparser (>=1.0.0)", "regex (>=2020.11.13)", "cchardet (2.1.4)", "cchardet (>=2.1.7)"]
+all = ["ciso8601 (>=2.1.3)", "dateparser (>=1.0.0)", "regex (>=2020.11.13)", "cchardet (==2.1.4)", "cchardet (>=2.1.7)"]
 
 [[package]]
 name = "httpcore"
@@ -586,7 +597,7 @@ python-versions = "*"
 
 [[package]]
 name = "jinja2"
-version = "2.11.2"
+version = "2.11.3"
 description = "A very fast and expressive template engine."
 category = "main"
 optional = false
@@ -632,7 +643,7 @@ SecretStorage = {version = ">=3.2", markers = "sys_platform == \"linux\""}
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
-testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "pytest-black (>=0.3.7)", "pytest-mypy"]
+testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [[package]]
 name = "kubernetes"
@@ -707,7 +718,7 @@ pymongo = ">=3.11,<4"
 
 [[package]]
 name = "msrest"
-version = "0.6.19"
+version = "0.6.21"
 description = "AutoRest swagger generator Python client runtime."
 category = "main"
 optional = false
@@ -794,7 +805,7 @@ typing-extensions = "*"
 
 [[package]]
 name = "packaging"
-version = "20.8"
+version = "20.9"
 description = "Core utilities for Python packages"
 category = "dev"
 optional = false
@@ -978,7 +989,7 @@ python-versions = "*"
 
 [[package]]
 name = "pytest"
-version = "6.2.1"
+version = "6.2.2"
 description = "pytest: simple powerful testing with Python"
 category = "dev"
 optional = false
@@ -1102,7 +1113,7 @@ urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
 security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
-socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
+socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 
 [[package]]
 name = "requests-file"
@@ -1304,7 +1315,7 @@ readability-lxml = ">=0.8.1"
 urllib3 = ">=1.25,<2"
 
 [package.extras]
-all = ["pycld3 (>=0.20)", "cchardet (2.1.4)", "cchardet (>=2.1.7)"]
+all = ["pycld3 (>=0.20)", "cchardet (==2.1.4)", "cchardet (>=2.1.7)"]
 
 [[package]]
 name = "typing-extensions"
@@ -1324,7 +1335,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "urllib3"
-version = "1.26.2"
+version = "1.26.3"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
@@ -1333,7 +1344,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 [package.extras]
 brotli = ["brotlipy (>=0.6.0)"]
 secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
-socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
+socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "validate-email"
@@ -1376,7 +1387,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "835ea6f85e3df0af2f0a9ab5bc3fefb260184355d4602400bee92dbe31d1de48"
+content-hash = "472a57205817f236c8467637457f197e251e14916a37dd8027dacfc5e50c7bbe"
 
 [metadata.files]
 atomicwrites = [
@@ -1401,8 +1412,8 @@ beautifulsoup4 = [
     {file = "beautifulsoup4-4.9.3.tar.gz", hash = "sha256:84729e322ad1d5b4d25f805bfa05b902dd96450f43842c4e99067d5e1369eb25"},
 ]
 cachetools = [
-    {file = "cachetools-4.2.0-py3-none-any.whl", hash = "sha256:c6b07a6ded8c78bf36730b3dc452dfff7d95f2a12a2fed856b1a0cb13ca78c61"},
-    {file = "cachetools-4.2.0.tar.gz", hash = "sha256:3796e1de094f0eaca982441c92ce96c68c89cced4cd97721ab297ea4b16db90e"},
+    {file = "cachetools-4.2.1-py3-none-any.whl", hash = "sha256:1d9d5f567be80f7c07d765e21b814326d78c61eb0c3a637dffc0e5d1796cb2e2"},
+    {file = "cachetools-4.2.1.tar.gz", hash = "sha256:f469e29e7aa4cff64d8de4aad95ce76de8ea1125a16c68e0d93f65c3c3dc92e9"},
 ]
 certifi = [
     {file = "certifi-2020.12.5-py2.py3-none-any.whl", hash = "sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830"},
@@ -1451,9 +1462,8 @@ chardet = [
     {file = "chardet-3.0.4.tar.gz", hash = "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"},
 ]
 cleanco = [
-    {file = "cleanco-2.0.1-py3-none-any.whl", hash = "sha256:5a6191630bf728d4a72af9b48991750f0e0d1c0c5bed6c26b7d3e499d24e61d2"},
-    {file = "cleanco-2.0.1-py3.7.egg", hash = "sha256:69ca33990a3dac654f1ef89a2ed207ce254eddb9b134ed54acaa9383f38c5eb5"},
-    {file = "cleanco-2.0.1.tar.gz", hash = "sha256:dd2e29845bdfbc195d80f904f09410639a199da90569a1fcc99df9d3153b5d78"},
+    {file = "cleanco-2.1-py3-none-any.whl", hash = "sha256:848a8c26a6ea9298b54f32e793c0028242f4b57ab800f9ab89606df5980dce2c"},
+    {file = "cleanco-2.1.tar.gz", hash = "sha256:e5f00e34e8c1c8fb4e15b53bc56571e3b3e16be316749cfc02036b01a90b52ce"},
 ]
 cleantext = [
     {file = "cleantext-1.1.3-py3-none-any.whl", hash = "sha256:82fd5525537bb3686778d7703ee1ebc0d07f0845057a14ee9d2a5708e8ef5192"},
@@ -1537,8 +1547,8 @@ deepmerge = [
     {file = "deepmerge-0.1.1.tar.gz", hash = "sha256:fa1d44269786bcc12d30a7471b0b39478aa37a43703b134d7f12649792f92c1f"},
 ]
 delphai-utils = [
-    {file = "delphai-utils-0.2.10.tar.gz", hash = "sha256:2392fb4944ecfab06b19c4cf78bd9d06f1073f37f981b30bd5e0a7d87c8cefc0"},
-    {file = "delphai_utils-0.2.10-py3-none-any.whl", hash = "sha256:543a4544e6e902240f46b2173807c6fe8ff6e3cd8ea5c2b5cf23334d1591f7e2"},
+    {file = "delphai-utils-0.2.14.tar.gz", hash = "sha256:1310b38ddbf7489dd5b1f99916909d9a0d5a01507776f0777228cbd52dad4502"},
+    {file = "delphai_utils-0.2.14-py3-none-any.whl", hash = "sha256:95119f56a0c3c50f6486c5560eb61a65c687510273e9abc528db054251023bd8"},
 ]
 ecdsa = [
     {file = "ecdsa-0.14.1-py2.py3-none-any.whl", hash = "sha256:e108a5fe92c67639abae3260e43561af914e7fd0d27bae6d2ec1312ae7934dfe"},
@@ -1566,6 +1576,10 @@ flake8-polyfill = [
 fuzzywuzzy = [
     {file = "fuzzywuzzy-0.18.0-py2.py3-none-any.whl", hash = "sha256:928244b28db720d1e0ee7587acf660ea49d7e4c632569cad4f1cd7e68a5f0993"},
     {file = "fuzzywuzzy-0.18.0.tar.gz", hash = "sha256:45016e92264780e58972dca1b3d939ac864b78437422beecebb3095f8efd00e8"},
+]
+google = [
+    {file = "google-3.0.0-py2.py3-none-any.whl", hash = "sha256:889cf695f84e4ae2c55fbc0cfdaf4c1e729417fa52ab1db0485202ba173e4935"},
+    {file = "google-3.0.0.tar.gz", hash = "sha256:143530122ee5130509ad5e989f0512f7cb218b2d4eddbafbad40fd10e8d8ccbe"},
 ]
 google-auth = [
     {file = "google-auth-1.24.0.tar.gz", hash = "sha256:0b0e026b412a0ad096e753907559e4bdb180d9ba9f68dd9036164db4fdc4ad2e"},
@@ -1744,8 +1758,8 @@ jieba3k = [
     {file = "jieba3k-0.35.1.zip", hash = "sha256:980a4f2636b778d312518066be90c7697d410dd5a472385f5afced71a2db1c10"},
 ]
 jinja2 = [
-    {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
-    {file = "Jinja2-2.11.2.tar.gz", hash = "sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0"},
+    {file = "Jinja2-2.11.3-py2.py3-none-any.whl", hash = "sha256:03e47ad063331dd6a3f04a43eddca8a966a26ba0c5b7207a9a9e4e08f1b29419"},
+    {file = "Jinja2-2.11.3.tar.gz", hash = "sha256:a6d58433de0ae800347cab1fa3043cebbabe8baa9d29e668f1c768cb87a333c6"},
 ]
 joblib = [
     {file = "joblib-1.0.0-py3-none-any.whl", hash = "sha256:75ead23f13484a2a414874779d69ade40d4fa1abe62b222a23cd50d4bc822f6f"},
@@ -1850,8 +1864,8 @@ motor = [
     {file = "motor-2.3.0.tar.gz", hash = "sha256:f1692b760d834707e3477996ce8d407af8cd61c1a2abedbf81c22ef14675e61a"},
 ]
 msrest = [
-    {file = "msrest-0.6.19-py2.py3-none-any.whl", hash = "sha256:87aa64948c3ef3dbf6f6956d2240493e68d714e4621b92b65b3c4d5808297929"},
-    {file = "msrest-0.6.19.tar.gz", hash = "sha256:55f8c3940bc5dc609f8cf9fcd639444716cc212a943606756272e0d0017bbb5b"},
+    {file = "msrest-0.6.21-py2.py3-none-any.whl", hash = "sha256:c840511c845330e96886011a236440fafc2c9aff7b2df9c0a92041ee2dee3782"},
+    {file = "msrest-0.6.21.tar.gz", hash = "sha256:72661bc7bedc2dc2040e8f170b6e9ef226ee6d3892e01affd4d26b06474d68d8"},
 ]
 newspaper3k = [
     {file = "newspaper3k-0.2.8-py3-none-any.whl", hash = "sha256:44a864222633d3081113d1030615991c3dbba87239f6bbf59d91240f71a22e3e"},
@@ -1869,8 +1883,8 @@ omegaconf = [
     {file = "omegaconf-2.0.6.tar.gz", hash = "sha256:92ca535a788d21651bf4c2eaf5c1ca4c7a8003b2dab4a87cbb09109784268806"},
 ]
 packaging = [
-    {file = "packaging-20.8-py2.py3-none-any.whl", hash = "sha256:24e0da08660a87484d1602c30bb4902d74816b6985b93de36926f5bc95741858"},
-    {file = "packaging-20.8.tar.gz", hash = "sha256:78598185a7008a470d64526a8059de9aaa449238f280fc9eb6b13ba6c4109093"},
+    {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
+    {file = "packaging-20.9.tar.gz", hash = "sha256:5b327ac1320dc863dca72f4514ecc086f31186744b84a230374cc1fd776feae5"},
 ]
 pastel = [
     {file = "pastel-0.2.1-py2.py3-none-any.whl", hash = "sha256:4349225fcdf6c2bb34d483e523475de5bb04a5c10ef711263452cb37d7dd4364"},
@@ -2086,8 +2100,8 @@ pyreadline = [
     {file = "pyreadline-2.1.zip", hash = "sha256:4530592fc2e85b25b1a9f79664433da09237c1a270e4d78ea5aa3a2c7229e2d1"},
 ]
 pytest = [
-    {file = "pytest-6.2.1-py3-none-any.whl", hash = "sha256:1969f797a1a0dbd8ccf0fecc80262312729afea9c17f1d70ebf85c5e76c6f7c8"},
-    {file = "pytest-6.2.1.tar.gz", hash = "sha256:66e419b1899bc27346cb2c993e12c5e5e8daba9073c1fbce33b9807abc95c306"},
+    {file = "pytest-6.2.2-py3-none-any.whl", hash = "sha256:b574b57423e818210672e07ca1fa90aaf194a4f63f3ab909a2c67ebb22913839"},
+    {file = "pytest-6.2.2.tar.gz", hash = "sha256:9d1edf9e7d0b84d72ea3dbcdfd22b35fb543a5e8f2a60092dd578936bf63d7f9"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},
@@ -2271,8 +2285,8 @@ unidecode = [
     {file = "Unidecode-1.1.2.tar.gz", hash = "sha256:a039f89014245e0cad8858976293e23501accc9ff5a7bdbc739a14a2b7b85cdc"},
 ]
 urllib3 = [
-    {file = "urllib3-1.26.2-py2.py3-none-any.whl", hash = "sha256:d8ff90d979214d7b4f8ce956e80f4028fc6860e4431f731ea4a8c08f23f99473"},
-    {file = "urllib3-1.26.2.tar.gz", hash = "sha256:19188f96923873c92ccb987120ec4acaa12f0461fa9ce5d3d0772bc965a39e08"},
+    {file = "urllib3-1.26.3-py2.py3-none-any.whl", hash = "sha256:1b465e494e3e0d8939b50680403e3aedaa2bc434b7d5af64dfd3c958d7f5ae80"},
+    {file = "urllib3-1.26.3.tar.gz", hash = "sha256:de3eedaad74a2683334e282005cd8d7f22f4d55fa690a2a1020a416cb0a47e73"},
 ]
 validate-email = [
     {file = "validate_email-1.3.tar.gz", hash = "sha256:784719dc5f780be319cdd185dc85dd93afebdb6ebb943811bc4c7c5f9c72aeaf"},
