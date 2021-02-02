@@ -1,5 +1,4 @@
 import base64
-import requests
 from unidecode import unidecode
 from bson import ObjectId
 import datetime
@@ -8,7 +7,7 @@ from utils.utils import check_language, save_blob, translate_to_english
 from delphai_utils.logging import logging
 from delphai_utils.db import db
 from .news_processing import match_nes_to_db_companies, news_boilerplater
-from .news_processing import create_company_to_descr_dict, enrich_company_to_descr_dict
+from .news_processing import create_company_to_description_dict, enrich_company_to_description_dict
 from .news_processing import get_company_nes_from_article, get_company_nes_from_ger_article
 
 news = db.news
@@ -209,7 +208,9 @@ async def save_article(companies: list,
           logging.info(f'[Translated & Unmasked] Title={title}, Content={content[:500]} ... , Date={date}')
 
         # find sentences with input company mentions. if companies are given then we assume they will appear in the text
-        company_to_descr_dict = await create_company_to_descr_dict(companies=companies, title=title, content=content)
+        company_to_description_dict = await create_company_to_description_dict(companies=companies,
+                                                                               title=title,
+                                                                               content=content)
 
         # link input and discovered companies to our company database
         try:
@@ -231,8 +232,8 @@ async def save_article(companies: list,
             if matched_companies and matched_urls and matched_ids and company_mentions:
               logging.info(f"Linked to companies={matched_companies} with urls={matched_urls}")
               # find the mentions of the companies discovered by ner
-              new_companies, company_to_descr_dict = enrich_company_to_descr_dict(
-                  company_to_descr_dict=company_to_descr_dict,
+              new_companies, company_to_description_dict = enrich_company_to_description_dict(
+                  company_to_description_dict=company_to_description_dict,
                   company_mentions=company_mentions,
                   company_ids=matched_ids,
                   title=title,
@@ -272,9 +273,9 @@ async def save_article(companies: list,
         all_article_descriptions = list()
         all_product_article_descriptions = list()
         for company in companies:
-          if company_to_descr_dict[company["_id"]]:
+          if company_to_description_dict[company["_id"]]:
             company_article_match_found = True
-            printable_description = unidecode(company_to_descr_dict[company["_id"]])
+            printable_description = unidecode(company_to_description_dict[company["_id"]])
             all_article_descriptions.append(printable_description)
             data = create_data_object(title=title,
                                       description=printable_description,

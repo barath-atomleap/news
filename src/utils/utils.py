@@ -1,5 +1,4 @@
 from delphai_utils.logging import logging
-import requests
 import cld3
 from proto.proto.translation_pb2_grpc import TranslationStub
 from proto.proto.translation_pb2 import TranslateRequest, TranslateResponse
@@ -8,11 +7,9 @@ from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
 from delphai_utils.config import get_config
 from googletrans import Translator
-from grpc.experimental.aio import insecure_channel
+from delphai_utils.grpc_client import get_grpc_client
 
-translation_address = get_config('translation.address')
-channel = insecure_channel(translation_address)
-translation_client = TranslationStub(channel)
+translation_client = get_grpc_client(TranslationStub, get_config('translation.address'))
 
 
 async def save_blob(url, text):
