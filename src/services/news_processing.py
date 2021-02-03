@@ -22,7 +22,7 @@ from google.protobuf.json_format import MessageToDict
 nltk.download('punkt')
 
 post_retry_times = 5
-names_matcher_client = get_grpc_client(NamesMatcherStub, get_config('names_matcher.address'))
+names_matcher_client = get_grpc_client(NamesMatcherStub, get_config('names-matcher.address'))
 
 
 async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
@@ -234,13 +234,7 @@ async def match_nes_to_db_companies(named_entities: list, hard_matching: bool):
       # ner_matching_response = requests.post(get_config('nel.url'), json={'names': all_entities}).json()
       # add name matching results to dict and filter them
       results = MessageToDict(ner_matching_response, preserving_proto_field_name=True).get('results', [])
-      ner_best_matches = {
-          r['name']: {
-              'count': r['matches_count'],
-              'best': r['matches'][0]
-          }
-          for r in results
-      }
+      ner_best_matches = {r['name']: {'count': r['matches_count'], 'best': r['matches'][0]} for r in results}
       logging.info('Matcher response:')
       for result in results:
         logging.info(result)
