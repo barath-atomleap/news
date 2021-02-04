@@ -4,7 +4,6 @@ from newspaper import Article
 from bson import ObjectId
 from cleantext import clean
 from cleanco import prepare_terms, basename
-import base64
 import re
 import nltk
 from fuzzywuzzy import fuzz
@@ -13,6 +12,8 @@ import requests
 import httpx
 from proto.proto.names_matcher_pb2_grpc import NamesMatcherStub
 from proto.proto.names_matcher_pb2 import NamesMatchRequest, NamesMatchResponse
+from proto.proto.page_scraper_pb2_grpc import PageScraperStub
+from proto.proto.page_scraper_pb2 import HtmlRequest, HtmlResponse
 from delphai_utils.logging import logging
 from delphai_utils.db import db
 from delphai_utils.config import get_config
@@ -23,6 +24,7 @@ nltk.download('punkt')
 
 post_retry_times = 5
 names_matcher_client = get_grpc_client(NamesMatcherStub, get_config('names-matcher.address'))
+page_scraper_client = get_grpc_client(PageScraperStub, get_config('page-scraper.address'))
 
 
 async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
@@ -54,16 +56,11 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
 
   if not html and url:
     try:
-      # TODO: use page-scraper
-      async with httpx.AsyncClient() as client:
-        html = (await client.get(url)).text
-        if not html:
-          single_scraper_url = get_config('single_scraper.url')
-          response = await client.post(single_scraper_url, json={'url': url})
-          response.raise_for_status()
-          html = base64.b64decode(response.json()['html']).decode('utf-8')
+      req = HtmlRequest(url=url)
+      page_scraper_response: HtmlResponse = await page_scraper_client.get_html(req)
+      html = page_scraper_response.html
     except requests.exceptions.HTTPError as err:
-      logging.error(f"Error calling the German NER service: {err}.")
+      logging.error(f"Error scraping page: {err}.")
       raise SystemExit(err)
 
   # logging.info(f'html after: {len(html) if html else html}')

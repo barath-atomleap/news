@@ -10,3 +10,6 @@ names-matcher:
 
 translation:
   address: translation.grpc.delphai.red:80
+
+page-scraper:
+  address: page-scraper.grpc.delphai.red:80

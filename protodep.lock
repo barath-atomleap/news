@@ -9,7 +9,7 @@ proto_outdir = "./.vendor"
 
 [[dependencies]]
   target = "github.com/googleapis/api-common-protos"
-  revision = "0fcae75a2c20a140137e3a9c48a87d15ceffabd7"
+  revision = "f37c0ecc55f19b1675448e4bad70fd45c93f5b8f"
   branch = "master"
   path = ""
 
@@ -21,6 +21,12 @@ proto_outdir = "./.vendor"
 
 [[dependencies]]
   target = "github.com/delphai/translation"
-  revision = "d778868214ae8bbe3bfee52b6e5fe40f8102ac90"
+  revision = "738addf310e98fa1a69741d8962c2b63c16ffd4b"
+  branch = "master"
+  path = ""
+
+[[dependencies]]
+  target = "github.com/delphai/page-scraper"
+  revision = "82b9c981189ca4bbbf9bc464ebdb19fd48c0fc22"
   branch = "master"
   path = ""
