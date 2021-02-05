@@ -6,7 +6,7 @@ authors = ["leofj <leonardo@delphai.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-delphai-utils = {extras = ["config", "database", "grpc"], version = "^0.2.9"}
+delphai-utils = {extras = ["config", "database", "grpc"], version = "^0.2.16"}
 grpcio = "*"
 grpcio-tools = "*"
 pymongo = "*"
