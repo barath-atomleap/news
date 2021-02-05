@@ -116,7 +116,7 @@ def get_company_info_from_article(company_name: str, content: str):
     return ""
 
 
-async def get_company_nes_from_article(article: str):
+async def get_company_named_entities_from_article(article: str):
   """
   Given a news article, it returns the company mentions identified as named entities.
   :param article: body of news article

@@ -8,7 +8,7 @@ from delphai_utils.logging import logging
 from delphai_utils.db import db
 from .news_processing import match_nes_to_db_companies, news_boilerplater
 from .news_processing import create_company_to_description_dict, enrich_company_to_description_dict
-from .news_processing import get_company_nes_from_article, get_company_nes_from_ger_article
+from .news_processing import get_company_named_entities_from_article, get_company_nes_from_ger_article
 
 news = db.news
 news.create_index('url')
@@ -216,7 +216,7 @@ async def save_article(companies: list,
         try:
           # get named entities for English articles
           if content_lang == 'en':
-            nes = await get_company_nes_from_article(
+            nes = await get_company_named_entities_from_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
             logging.info(f'English organizations:{nes}')
 
