@@ -110,6 +110,8 @@ async def save_article(companies: list,
     else:
       logging.error('Trying to add a news article with empty title to the db.')
     if date:
+      if isinstance(date, str):
+        date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
       data['date'] = date
     else:
       logging.error('Trying to add a news article with empty date to the db.')
@@ -280,7 +282,7 @@ async def save_article(companies: list,
             data = create_data_object(title=title,
                                       description=printable_description,
                                       mentions=[company["name"]],
-                                      date=datetime.datetime.strptime(str(date), '%Y-%m-%d'),
+                                      date=date,
                                       is_translated=is_translated,
                                       content_ref=content_ref,
                                       original_content_ref=original_content_ref,
@@ -327,7 +329,7 @@ async def save_article(companies: list,
           data = create_data_object(title=title,
                                     description='',
                                     mentions=[],
-                                    date=datetime.datetime.strptime(str(date), '%Y-%m-%d'),
+                                    date=date,
                                     is_translated=is_translated,
                                     content_ref=content_ref,
                                     original_content_ref=None,
