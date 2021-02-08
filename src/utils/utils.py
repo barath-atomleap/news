@@ -1,45 +1,45 @@
 from delphai_utils.logging import logging
-import requests
 import cld3
-from azure.storage.blob import BlobServiceClient
+from proto.proto.translation_pb2_grpc import TranslationStub
+from proto.proto.translation_pb2 import TranslateRequest, TranslateResponse
+from proto.proto.translation_pb2 import DetectLanguageRequest, DetectLanguageResponse
+from azure.storage.blob.aio import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
 from delphai_utils.config import get_config
 from googletrans import Translator
+from delphai_utils.grpc_client import get_grpc_client
+
+translation_client = get_grpc_client(TranslationStub, get_config('translation.address'))
 
 
-def save_blob(url, text):
+async def save_blob(key, content):
   try:
-    blob_storage = get_config('blob_storage')
-    # Create the BlobServiceClient object which will be used to create a container client
-    blob_service_client = BlobServiceClient.from_connection_string(blob_storage['connection_string'])
-
-    # Create a blob client using the local file name as the name for the blob
-    blob_client = blob_service_client.get_blob_client(container=blob_storage['container'], blob=url)
-
-    logging.info("Uploading to Azure Storage as blob:\t" + url)
-
-    # Upload the created file
-    blob_client.upload_blob(text)
-  except ResourceExistsError as e:
-    # logging.warning(f'Existing blob: {e}')
-    pass
+    storage_connection_string = get_config('blob_storage.connection_string')
+    storage_container_name = get_config('blob_storage.container')
+    storage_client = BlobServiceClient.from_connection_string(storage_connection_string, logging_enable=False)
+    news_container_client = storage_client.get_container_client(storage_container_name)
+    async with news_container_client:
+      blob_client = news_container_client.get_blob_client(key)
+      await blob_client.upload_blob(content, overwrite=True)
+    logging.info(f'[wrote to blob] {key}')
+  except ResourceExistsError as er:
+    logging.warning(f'Existing blob: {er}')
   except Exception as e:
-    logging.error('Exception:', e)
-  return url
+    logging.error('Error saving blob:', e)
+    return ''
+  return key
 
 
-def is_text_in_english(text: str):
+async def is_text_in_english(text: str):
   """
     Detects the language of a given text and determines whether it is in English or not.
     :return: bool for whether text is in English or not
     """
 
   try:
-    response = requests.post(get_config('language_detector.url'),
-                             json={
-                                 "text": text
-                             }).json()
-    if response["language"] == "en":
+    req = DetectLanguageRequest(text=text)
+    detected_lang: DetectLanguageResponse = await translation_client.detect_language(req)
+    if detected_lang.language == "en":
       return True
     else:
       return False
@@ -52,47 +52,44 @@ def is_text_in_english(text: str):
       return False
 
 
-def check_language(text: str):
+async def check_language(text: str):
   """
     Detects the language of a given text and returns the language.
     :return: language code
     """
 
   try:
-    response = requests.post(get_config('language_detector.url'),
-                             json={
-                                 "text": text
-                             }).json()
-    return response["language"]
+    req = DetectLanguageRequest(text=text)
+    detected_lang: DetectLanguageResponse = await translation_client.detect_language(req)
+    return detected_lang.language
   except Exception as e:
     logging.warning(f'lang detect failed: {e}')
     language = cld3.get_language(text)
     return str(language[0])
 
 
-def translate_to_english(text: str):
+async def translate_to_english(non_eng_text: str):
   """
     Translates given text to English.
-    :param text: article text (str)
+    :param non_eng_text: article text (str)
     :return: translated text (str)
     """
 
-  retry_count = 15
-  english_text = None
   try:
-    response = requests.post(get_config('translator.url'), json={
-        "text": text, "method": 'azure'
-    }).json()
+    req = TranslateRequest(text=non_eng_text, method='azure')
+    translated_text: TranslateResponse = await translation_client.translate(req)
 
-    return response["translation"]
+    return translated_text.translation
   except Exception as e:
     logging.warning(f'translation service failed: {e}')
+    retry_count = 15
+    english_text = None
     for i in range(0, retry_count, 1):
       try:
         translator = Translator()
-        translated_text = translator.translate(text, dest="en")
+        translated_text = translator.translate(non_eng_text, dest="en")
         english_text = translated_text.text
         return english_text
       except AttributeError as e:
-        logging.error(f'Error translating with google trans: {e}. Text = {text[:100]}. Retry {i}')
+        logging.error(f'Error translating with google trans: {e}. Text = {non_eng_text[:100]}. Retry {i}')
     return english_text

@@ -25,7 +25,7 @@ server:
   host_and_port: 0.0.0.0:8080
 
 blob_storage:
-  connection_string: ${kube:blob-storage/connection-string}
+  connection_string: ${kube:delphai-common-blobs/connection-string}
   container: "scraped-data"
 
 single_scraper:
@@ -39,11 +39,13 @@ german_ner:
   uri: https://azure-ml.delphai.red/api/v1/service/ger-ner/score
   key: AhCgR7uzrXGCMKi9oVbd9kxC6RYVfk6J
 
-nel:
+names-matcher:
   url: https://api.delphai.red/names-matcher/delphai.namesmatcher.NamesMatcher.match
+  address: names-matcher-grpc.names-matcher:80
 
-language_detector:
-  url: https://api.delphai.red/translation/delphai.Translation.detect_language
-
-translator:
+translation:
   url: https://api.delphai.red/translation/delphai.Translation.translate
+  address: translation-grpc.translation:80
+
+page-scraper:
+  address: page-scraper-grpc.page-scraper:80

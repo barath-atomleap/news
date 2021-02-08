@@ -11,7 +11,8 @@ grpcio = "*"
 grpcio-tools = "*"
 pymongo = "*"
 grpcio-reflection = "*"
-azure-storage-blob = "*"
+google = "*"
+azure-storage-blob = "^12.7.1"
 schematics = "*"
 trafilatura = "*"
 newspaper3k = "*"
@@ -24,6 +25,7 @@ cleanco = "*"
 unidecode = "*"
 pycld3 = "0.20"
 googletrans = "3.0.0"
+aiohttp = "^3.7.3"
 
 [tool.poetry.dev-dependencies]
 yapf = "*"
@@ -41,7 +43,7 @@ codegen = [
   {cmd = "mkdir -p ./src"},
   {cmd = "protodep up"},
   {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"},
-  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --python_out=./src/proto ./.vendor/**/*.proto"}
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src/proto --python_out=./src/proto ./.vendor/**/*.proto"}
 ]
 swaggergen = [
   {cmd = "protoc -I./.vendor -I. --swagger_out . ./proto/*.proto"},
