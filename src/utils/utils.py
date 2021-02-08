@@ -3,7 +3,7 @@ import cld3
 from proto.proto.translation_pb2_grpc import TranslationStub
 from proto.proto.translation_pb2 import TranslateRequest, TranslateResponse
 from proto.proto.translation_pb2 import DetectLanguageRequest, DetectLanguageResponse
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob.aio import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
 from delphai_utils.config import get_config
 from googletrans import Translator
@@ -12,25 +12,22 @@ from delphai_utils.grpc_client import get_grpc_client
 translation_client = get_grpc_client(TranslationStub, get_config('translation.address'))
 
 
-async def save_blob(url, text):
+async def save_blob(key, content):
   try:
-    blob_storage = get_config('blob_storage')
-    # Create the BlobServiceClient object which will be used to create a container client
-    blob_service_client = BlobServiceClient.from_connection_string(blob_storage['connection_string'])
-
-    # Create a blob client using the local file name as the name for the blob
-    blob_client = blob_service_client.get_blob_client(container=blob_storage['container'], blob=url)
-
-    logging.info("Uploading to Azure Storage as blob:\t" + url)
-
-    # Upload the created file
-    await blob_client.upload_blob(text)
-  except ResourceExistsError:
-    # logging.warning(f'Existing blob: {e}')
-    pass
+    storage_connection_string = get_config('blob_storage.connection_string')
+    storage_container_name = get_config('blob_storage.container')
+    storage_client = BlobServiceClient.from_connection_string(storage_connection_string, logging_enable=False)
+    news_container_client = storage_client.get_container_client(storage_container_name)
+    async with news_container_client:
+      blob_client = news_container_client.get_blob_client(key)
+      await blob_client.upload_blob(content, overwrite=True)
+    logging.info(f'[wrote to blob] {key}')
+  except ResourceExistsError as er:
+    logging.warning(f'Existing blob: {er}')
   except Exception as e:
-    logging.error('Exception:', e)
-  return url
+    logging.error('Error saving blob:', e)
+    return ''
+  return key
 
 
 async def is_text_in_english(text: str):

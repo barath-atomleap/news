@@ -147,7 +147,7 @@ async def save_article(companies: list,
       html = base64.b64decode(html).decode('utf-8')
 
     # if not boilerplated input, process and boilerplate article
-    if not title and not content:
+    if not title or not content:
       title, content, date, html = await news_boilerplater(html=html, url=page_url, date=date)
     logging.info(f'[Original] Title={title}, Content={content[:500]} ... , Date={date}')
     if test_mode:
@@ -301,8 +301,8 @@ async def save_article(companies: list,
               message += f'{page_url} added to DB.\n'
             else:
               message += f'{page_url} already exists.\n'
-              article_id = str(await news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})['_id'])
-
+              existing_article = await news.find_one({'company_id': ObjectId(company['_id']), 'url': page_url})
+              article_id = str(existing_article['_id'])
             # calling products service
             # if not no_products:
             #   try:
@@ -345,7 +345,7 @@ async def save_article(companies: list,
               'content': content,
               'descriptions': all_article_descriptions,
               'product_descriptions': all_product_article_descriptions,
-              'message': f'Added {len(article_id_list)} company-article pairs to DB.'
+              'message': f'Added {len(article_id_list)} company-article pairs to DB.\n{message}'
           }
       except Exception as e:
         logging.error(f'Error while processing and saving the article: {e}')
