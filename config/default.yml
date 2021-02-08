@@ -25,7 +25,7 @@ server:
   host_and_port: 0.0.0.0:8080
 
 blob_storage:
-  connection_string: ${kube:blob-storage/connection-string}
+  connection_string: ${kube:delphai-common-blobs/connection-string}
   container: "scraped-data"
 
 single_scraper:
