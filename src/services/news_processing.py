@@ -21,6 +21,7 @@ from delphai_utils.grpc_client import get_grpc_client
 from google.protobuf.json_format import MessageToDict
 
 nltk.download('punkt')
+nltk.download('stopwords')
 
 post_retry_times = 5
 names_matcher_client = get_grpc_client(NamesMatcherStub, get_config('names-matcher.address'))
