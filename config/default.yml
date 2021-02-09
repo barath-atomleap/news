@@ -45,7 +45,7 @@ names-matcher:
 
 translation:
   url: https://api.delphai.red/translation/delphai.Translation.translate
-  address: translation-grpc.translation:80
+  address: translation.grpc.delphai.red:80
 
 page-scraper:
   address: page-scraper-grpc.page-scraper:80
