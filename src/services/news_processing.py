@@ -82,6 +82,9 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     except json.decoder.JSONDecodeError as e:
       logging.error(e)
       return None, None, None, None
+    except Exception as e:
+      logging.error(e)
+      return None, None, None, None
 
   logging.info(f'Article scraped: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
