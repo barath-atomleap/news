@@ -8,6 +8,7 @@ from azure.core.exceptions import ResourceExistsError
 from delphai_utils.config import get_config
 from googletrans import Translator
 from delphai_utils.grpc_client import get_grpc_client
+import grpc
 
 translation_client = get_grpc_client(TranslationStub, get_config('translation.address'))
 
@@ -62,10 +63,25 @@ async def check_language(text: str):
     req = DetectLanguageRequest(text=text)
     detected_lang: DetectLanguageResponse = await translation_client.detect_language(req)
     return detected_lang.language
-  except Exception as e:
-    logging.warning(f'lang detect failed: {e}')
-    language = cld3.get_language(text)
-    return str(language[0])
+  # except Exception as e:
+  #   logging.warning(f'lang detect failed: {e}')
+  #   language = cld3.get_language(text)
+  #   return str(language[0])
+  except grpc.aio._call.AioRpcError as rpc_ex:
+    message_code = rpc_ex.code()
+    message_details = rpc_ex.details()
+    full_message = f'gRPC error: {message_code} {message_details}'
+    if message_code == grpc.StatusCode.UNAVAILABLE:
+      logging.error(
+        f'The ongoing request is terminated as the server is not available or closed already.\nMessage: {full_message}')
+      raise rpc_ex
+    elif message_code == grpc.StatusCode.INTERNAL:
+      logging.error(f'Internal error on the server side.\nMessage: {full_message}')
+      raise rpc_ex
+    elif message_code == grpc.StatusCode.UNKNOWN and 'asyncio.exceptions.TimeoutError' in message_details:
+      logging.error(f'BadClientInput.\nMessage: {full_message}')
+    else:
+      logging.error(f'Message: {full_message}')
 
 
 async def translate_to_english(non_eng_text: str):
