@@ -19,6 +19,7 @@ from delphai_utils.db import db
 from delphai_utils.config import get_config
 from delphai_utils.grpc_client import get_grpc_client
 from google.protobuf.json_format import MessageToDict
+import grpc
 
 nltk.download('punkt')
 nltk.download('stopwords')
