@@ -63,10 +63,6 @@ async def check_language(text: str):
     req = DetectLanguageRequest(text=text)
     detected_lang: DetectLanguageResponse = await translation_client.detect_language(req)
     return detected_lang.language
-  # except Exception as e:
-  #   logging.warning(f'lang detect failed: {e}')
-  #   language = cld3.get_language(text)
-  #   return str(language[0])
   except grpc.aio._call.AioRpcError as rpc_ex:
     message_code = rpc_ex.code()
     message_details = rpc_ex.details()
@@ -78,10 +74,10 @@ async def check_language(text: str):
     elif message_code == grpc.StatusCode.INTERNAL:
       logging.error(f'Internal error on the server side.\nMessage: {full_message}')
       raise rpc_ex
-    elif message_code == grpc.StatusCode.UNKNOWN and 'asyncio.exceptions.TimeoutError' in message_details:
-      logging.error(f'BadClientInput.\nMessage: {full_message}')
+    elif message_code == grpc.StatusCode.UNKNOWN:
+      logging.error(full_message)
     else:
-      logging.error(f'Message: {full_message}')
+      logging.error(full_message)
 
 
 async def translate_to_english(non_eng_text: str):
