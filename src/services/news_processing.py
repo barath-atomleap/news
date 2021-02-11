@@ -37,7 +37,7 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
       url: string with article url to be scraped
       date: string with article date (optional)
   Returns:
-      title (str), content (str), publication_date (str)
+      title (str), content (str), publication_date (str), html (str)
   """
   def preprocess_text(text: str):
     """
@@ -60,10 +60,28 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     try:
       req = HtmlRequest(url=url)
       page_scraper_response: HtmlResponse = await page_scraper_client.get_html(req)
+      logging.info(f'page_scraper_response: {page_scraper_response}')
       html = page_scraper_response.html
-    except Exception as err:
-      logging.error(f"Error scraping page: {err}.")
-      raise SystemExit(err)
+      if html is None:
+        logging.warning(f"Error scraping {url}. Html is empty.")
+    except grpc.aio._call.AioRpcError as rpc_ex:
+      message_code = rpc_ex.code()
+      message_details = rpc_ex.details()
+      full_message = f'gRPC error: {message_code} {message_details}'
+      if message_code == grpc.StatusCode.UNAVAILABLE:
+        logging.error(
+          f'The ongoing request is terminated as the server is not available or closed already.\nMessage: '
+          f'{full_message}')
+        return None, None, None, None
+      elif message_code == grpc.StatusCode.INTERNAL:
+        logging.error(f'Internal error on the server side.\nMessage: {full_message}')
+        return None, None, None, None
+      else:
+        logging.error(full_message)
+        return None, None, None, None
+    except json.decoder.JSONDecodeError as e:
+      logging.error(e)
+      return None, None, None, None
 
   logging.info(f'Article scraped: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
