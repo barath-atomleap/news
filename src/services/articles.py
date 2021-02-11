@@ -164,6 +164,7 @@ async def save_article(companies: list,
         unmatched_companies = False
 
         # translate text if necessary
+        logging.info(f'Checking language')
         content_lang = await check_language(content)
         nes = None
         multilingual_ner_done = False
@@ -179,6 +180,7 @@ async def save_article(companies: list,
               mask_count += 1
           # check if language is German and use German ner in this case
           if content_lang == 'de':
+            logging.info(f'Finding German organizations')
             nes = await get_company_nes_from_ger_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
             logging.info(f'German organizations:{nes}')
@@ -193,6 +195,7 @@ async def save_article(companies: list,
             title = title.replace(mention, company_to_mask_dict[mention])
             content = content.replace(mention, company_to_mask_dict[mention])
           logging.info(f'[Masked] Title={title}, Content={content[:500]} ... , Date={date}')
+          logging.info(f'Translating to English')
           title = await translate_to_english(title)
           if title is None:
             logging.error('Title could not be translated')
@@ -218,6 +221,7 @@ async def save_article(companies: list,
         try:
           # get named entities for English articles
           if content_lang == 'en':
+            logging.info(f'Finding English organizations')
             nes = await get_company_named_entities_from_article(
                 article="{}. {}".format(title, content)) if get_named_entities else None
             logging.info(f'English organizations:{nes}')
@@ -259,6 +263,7 @@ async def save_article(companies: list,
           message += 'Either the named entity recognition or linking service is not responding.\n'
 
         # save html and text, only if the article contains company mentions
+        logging.info(f'Saving to blob')
         if companies:
           try:
             if html:
@@ -269,6 +274,7 @@ async def save_article(companies: list,
           except Exception as e:
             logging.error(f'Error saving to blob storage: {e}')
 
+        logging.info(f'Adding to DB')
         # save article company pairs to the companies db collection
         company_article_match_found = False  # at least one match
         article_id_list = list()  # all article company pairs
