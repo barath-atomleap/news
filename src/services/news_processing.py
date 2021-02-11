@@ -56,15 +56,16 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     return text.strip()
 
   if not html and url:
+    logging.info('scraping article')
     try:
       req = HtmlRequest(url=url)
       page_scraper_response: HtmlResponse = await page_scraper_client.get_html(req)
       html = page_scraper_response.html
-    except requests.exceptions.HTTPError as err:
+    except Exception as err:
       logging.error(f"Error scraping page: {err}.")
       raise SystemExit(err)
 
-  # logging.info(f'html after: {len(html) if html else html}')
+  logging.info(f'Article scraped: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
   article = Article(url=url)
   article.download(input_html=html)
