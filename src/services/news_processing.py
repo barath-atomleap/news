@@ -60,7 +60,7 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
     try:
       req = HtmlRequest(url=url)
       page_scraper_response: HtmlResponse = await page_scraper_client.get_html(req)
-      logging.info(f'page_scraper_response: {page_scraper_response}')
+      # logging.info(f'page_scraper_response: {page_scraper_response}')
       html = page_scraper_response.html
       if html is None:
         logging.warning(f"Error scraping {url}. Html is empty.")
