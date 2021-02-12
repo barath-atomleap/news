@@ -1,5 +1,3 @@
-# migrate grpc service
-
 {
   // Use IntelliSense to learn about possible attributes.
   // Hover to view descriptions of existing attributes.
@@ -12,7 +10,18 @@
       "request": "launch",
       "program": "src/server.py",
       "console": "internalConsole"
+    },
+    {
+      "name": "pytest",
+      "type": "python",
+      "request": "launch",
+      "stopOnEntry": false,
+      "module": "pytest",
+      "args": [
+        "--snapshot-update"
+      ],
+      "envFile": "${workspaceFolder}/.env",
+      "console": "internalConsole",
     }
   ]
 }
-

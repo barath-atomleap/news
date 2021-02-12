@@ -1,21 +1,19 @@
 proto_outdir = "./.vendor"
 [[dependencies]]
   target = "github.com/envoyproxy/protoc-gen-validate"
-  branch = "master"
+  branch = "main"
   ignores = ["./java", "./tests"]
+  protocol = "https"
 
 [[dependencies]]
   target = "github.com/googleapis/api-common-protos"
   branch = "master"
+  protocol = "https"
 
 [[dependencies]]
-  target = "github.com/delphai/names-matcher"
+  target = "github.com/delphai/page-scraper"
   branch = "master"
 
 [[dependencies]]
   target = "github.com/delphai/translation"
-  branch = "master"
-
-[[dependencies]]
-  target = "github.com/delphai/page-scraper"
   branch = "master"

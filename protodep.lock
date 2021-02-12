@@ -2,31 +2,29 @@ proto_outdir = "./.vendor"
 
 [[dependencies]]
   target = "github.com/envoyproxy/protoc-gen-validate"
-  revision = "872b28c457822ed9c2a5405da3c33f386ac0e86f"
-  branch = "master"
+  revision = "baddfb500c285d348ce3a722d2bd8dd6531ec3d2"
+  branch = "main"
   path = ""
   ignores = ["./java", "./tests"]
+  protocol = "https"
 
 [[dependencies]]
   target = "github.com/googleapis/api-common-protos"
   revision = "f37c0ecc55f19b1675448e4bad70fd45c93f5b8f"
   branch = "master"
   path = ""
-
-[[dependencies]]
-  target = "github.com/delphai/names-matcher"
-  revision = "18e0b917e3dd35f0e098ccece5a69e776ae65a29"
-  branch = "master"
-  path = ""
-
-[[dependencies]]
-  target = "github.com/delphai/translation"
-  revision = "738addf310e98fa1a69741d8962c2b63c16ffd4b"
-  branch = "master"
-  path = ""
+  protocol = "https"
 
 [[dependencies]]
   target = "github.com/delphai/page-scraper"
-  revision = "82b9c981189ca4bbbf9bc464ebdb19fd48c0fc22"
+  revision = "24aa22b39137d834e21ea01c48c6ac8f1704ad28"
   branch = "master"
   path = ""
+  protocol = ""
+
+[[dependencies]]
+  target = "github.com/delphai/translation"
+  revision = "6daf5651f81aaad093810e0bb07362651fb2e156"
+  branch = "master"
+  path = ""
+  protocol = ""

@@ -1,13 +1,8 @@
 {
+  "python.pythonPath": ".venv/bin/python3.9",
   "protoc": {
     "options": [
       "--proto_path=.vendor"
     ]
-  },
-  "python.formatting.provider": "yapf",
-  "editor.formatOnSave": true,
-  "python.linting.flake8Enabled": true,
-  "python.linting.enabled": true,
-  "python.linting.pylintEnabled": false,
-  "python.pythonPath": ".venv/bin/python"
+  }
 }
