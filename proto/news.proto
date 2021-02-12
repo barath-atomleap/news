@@ -1,61 +1,25 @@
-// Delphai news articles [micro]service proto3 declaration
-
 syntax = "proto3";
-
-package delphai.news;
-
+package delphai;
+import "validate/validate.proto";
 import "google/api/annotations.proto";
+
 service News {
-  // Retrieves news about a company
-  rpc get_articles(ArticlesRequest) returns(ArticlesResponse) {
-    option(google.api.http) = {get : "/{company_id}"};
+  rpc add_article(AddArticleRequest) returns(AddArticleResponse) {
+    option(google.api.http) = {post : "/"};
   }
-  rpc add_articles(AddArticlesRequest) returns(AddArticlesResponse) {}
 }
 
-message ArticlesRequest {
-  string company_id = 1;
-  int32 start_row = 2;
-  int32 fetch_count = 3;
+message AddArticleRequest {
+  string url = 1;
 }
 
-message ArticlesResponse {
-  message Article {
-    string title = 1;
-    string date = 2;
-    string url = 3;
-    string description = 4;
-    string content = 5;
-    repeated string mentions = 6;
-    bool is_translated = 7;
-  }
-  repeated Article articles = 1;
-  int32 total_articles = 2;
-}
-
-message AddArticlesRequest {
-  message Company {
-    string company = 1;
-    string name = 2;
-  }
-  repeated Company companies = 1;
-  string url = 2;
-  string html = 3;
-  bool test_mode = 4;
-  string date = 5;
-  bool get_named_entities = 6;
-  bool no_products = 7;
-  string source = 8;
-  string topic = 9;
-  string title = 10;
-  string content = 11;
-  bool add_only_english = 12;
-}
-
-message AddArticlesResponse {
-  repeated string article_ids = 1;
+message AddArticleResponse {
+  string article_id = 1;
   string title = 2;
   string content = 3;
-  string message = 4;
-  string date = 5;
+  string date = 4;
+  string translated_content = 5;
+  string translated_title = 6;
+  string lang = 7;
+  repeated string mentions = 8;
 }

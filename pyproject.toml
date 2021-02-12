@@ -1,51 +1,42 @@
 [tool.poetry]
-name = "news"
+name = "grpc-minimal"
 version = "0.1.0"
-description = "news microservice"
-authors = ["leofj <leonardo@delphai.com>"]
+description = ""
+authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-delphai-utils = {extras = ["config", "database", "grpc"], version = "^0.2.16"}
-grpcio = "*"
-grpcio-tools = "*"
-pymongo = "*"
-grpcio-reflection = "*"
-google = "*"
-azure-storage-blob = "^12.7.1"
-schematics = "*"
-trafilatura = "*"
-newspaper3k = "*"
-cleantext = "*"
-cython = "*"
-fuzzywuzzy = "*"
-nltk = "*"
-python-levenshtein = "0.12.0"
-cleanco = "*"
-unidecode = "*"
-pycld3 = "0.20"
-googletrans = "3.0.0"
-aiohttp = "^3.7.3"
+delphai-utils = {extras = ["config", "grpc"], version = "^0.2.0"}
+mypy = "^0.800"
+mypy-protobuf = "^2.4"
+delphai-discovery = "^0.1.3"
+"ruamel.yaml" = "^0.16.12"
 
 [tool.poetry.dev-dependencies]
-yapf = "*"
-flake8 = "*"
-pep8-naming = "*"
-pytest = "*"
-poethepoet = "^0.9.0"
+yapf = "^0.30.0"
+pep8-naming = "^0.11.1"
+flake8 = "^3.8.3"
+poethepoet = "^0.8.0"
+grpcio-tools = "^1.32.0"
+pytest = "^6.2.2"
+pytest-sugar = "^0.9.4"
+pytest-asyncio = "^0.14.0"
+pytest-snapshot = "^0.5.0"
+PyYAML = "^5.4.1"
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+
 [tool.poe.tasks]
 start = "python src/server.py"
 codegen = [
   {cmd = "mkdir -p ./src"},
   {cmd = "protodep up"},
-  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --python_out=./src ./proto/*.proto"},
-  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src/proto --python_out=./src/proto ./.vendor/**/*.proto"}
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src --mypy_out=./src --python_out=./src ./proto/*.proto"}, 
+  {cmd = "python -m grpc_tools.protoc -I./.vendor -I. --grpc_python_out=./src/proto --mypy_out=./src/proto --python_out=./src/proto ./.vendor/**/*.proto"}
 ]
-swaggergen = [
-  {cmd = "protoc -I./.vendor -I. --swagger_out . ./proto/*.proto"},
-  {cmd = "mv ./proto/*.swagger.json ."}
+test = "pytest"
+
+[tool.pytest.ini_options]
+addopts = "-p no:warnings"
+filterwarnings = [
+  "error"
 ]

@@ -1,4 +1,3 @@
-# migrate grpc service
 FROM python:3.8 as build
 ARG SSH_PRIVATE_KEY
 WORKDIR /app
