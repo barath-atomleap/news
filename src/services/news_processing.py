@@ -8,7 +8,6 @@ import re
 import nltk
 from fuzzywuzzy import fuzz
 import json
-import requests
 import httpx
 from proto.proto.names_matcher_pb2_grpc import NamesMatcherStub
 from proto.proto.names_matcher_pb2 import NamesMatchRequest, NamesMatchResponse
@@ -59,33 +58,49 @@ async def news_boilerplater(html: str = '', url: str = '', date: str = ''):
   if not html and url:
     logging.info('scraping article')
     try:
-      req = HtmlRequest(url=url)
-      page_scraper_response: HtmlResponse = await page_scraper_client.get_html(req)
-      # logging.info(f'page_scraper_response: {page_scraper_response}')
-      html = page_scraper_response.html
-      if html is None:
-        logging.warning(f"Error scraping {url}. Html is empty.")
-    except grpc.aio._call.AioRpcError as rpc_ex:
-      message_code = rpc_ex.code()
-      message_details = rpc_ex.details()
-      full_message = f'gRPC error: {message_code} {message_details}'
-      if message_code == grpc.StatusCode.UNAVAILABLE:
-        logging.error(
-          f'The ongoing request is terminated as the server is not available or closed already.\nMessage: '
-          f'{full_message}')
-        return None, None, None, None
-      elif message_code == grpc.StatusCode.INTERNAL:
-        logging.error(f'Internal error on the server side.\nMessage: {full_message}')
-        return None, None, None, None
-      else:
-        logging.error(full_message)
-        return None, None, None, None
-    except json.decoder.JSONDecodeError as e:
-      logging.error(e)
+      async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        html = response.text
+        if html is None:
+          logging.warning(f"Error scraping {url}. Html is empty.")
+    except httpx.RequestError as exc:
+      logging.error(f"Error requesting page: {exc}.")
+      return None, None, None, None
+    except httpx.HTTPStatusError as exc:
+      logging.error(f"Error response requesting page: {exc.response.status_code} - {exc}.")
       return None, None, None, None
     except Exception as e:
-      logging.error(e)
+      logging.error(f'Error scraping page: {e}')
       return None, None, None, None
+
+    # try:
+    #   req = HtmlRequest(url=url)
+    #   page_scraper_response: HtmlResponse = await page_scraper_client.get_html(req)
+    #   # logging.info(f'page_scraper_response: {page_scraper_response}')
+    #   html = page_scraper_response.html
+    #   if html is None:
+    #     logging.warning(f"Error scraping {url}. Html is empty.")
+    # except grpc.aio._call.AioRpcError as rpc_ex:
+    #   message_code = rpc_ex.code()
+    #   message_details = rpc_ex.details()
+    #   full_message = f'gRPC error: {message_code} {message_details}'
+    #   if message_code == grpc.StatusCode.UNAVAILABLE:
+    #     logging.error(
+    #       f'The ongoing request is terminated as the server is not available or closed already.\nMessage: '
+    #       f'{full_message}')
+    #     return None, None, None, None
+    #   elif message_code == grpc.StatusCode.INTERNAL:
+    #     logging.error(f'Internal error on the server side.\nMessage: {full_message}')
+    #     return None, None, None, None
+    #   else:
+    #     logging.error(full_message)
+    #     return None, None, None, None
+    # except json.decoder.JSONDecodeError as e:
+    #   logging.error(e)
+    #   return None, None, None, None
+    # except Exception as e:
+    #   logging.error(e)
+    #   return None, None, None, None
 
   logging.info(f'Article scraped: {len(html) if html else html}')
   page_content = trafilatura.extract(html, include_comments=False, include_tables=False)
@@ -162,8 +177,14 @@ async def get_company_named_entities_from_article(article: str):
         return mention_dict['ORG']
       except json.decoder.JSONDecodeError as e:
         logging.error(f"Calling the NER service caused an error: {e}. Retrying to do the post request another time.")
-      except requests.exceptions.HTTPError as err:
-        logging.error(f"Error calling the German NER service: {err}.")
+      except httpx.RequestError as err:
+        logging.error(f"Error calling the NER service: {err}.")
+        raise SystemExit(err)
+      except httpx.HTTPStatusError as err:
+        logging.error(f"Error response {err.response.status_code} calling the NER service: {err}.")
+        raise SystemExit(err)
+      except Exception as err:
+        logging.error(f"Error calling the NER service: {err}.")
         raise SystemExit(err)
 
   return None
@@ -191,7 +212,13 @@ async def get_company_nes_from_ger_article(article: str):
       except json.decoder.JSONDecodeError as e:
         logging.error(
             f"Calling the German NER service caused an error: {e}. Retrying to do the post request another time.")
-      except requests.exceptions.HTTPError as err:
+      except httpx.RequestError as err:
+        logging.error(f"Error calling the German NER service: {err}.")
+        raise SystemExit(err)
+      except httpx.HTTPStatusError as err:
+        logging.error(f"Error response {err.response.status_code} calling the German NER service: {err}.")
+        raise SystemExit(err)
+      except Exception as err:
         logging.error(f"Error calling the German NER service: {err}.")
         raise SystemExit(err)
 
