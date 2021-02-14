@@ -11,6 +11,7 @@ service News {
 
 message AddArticleRequest {
   string url = 1;
+  repeated Company companies = 2;
 }
 
 message AddArticleResponse {
@@ -22,4 +23,9 @@ message AddArticleResponse {
   string translated_title = 6;
   string lang = 7;
   repeated string mentions = 8;
+}
+
+message Company {
+  string company = 1;
+  string name = 2;
 }

@@ -1,3 +1,4 @@
+from typing import Dict, List
 from grpc import ServicerContext, StatusCode
 import proto.news_pb2 as service_pb2
 import proto.news_pb2_grpc as service_pb2_grpc
@@ -15,6 +16,21 @@ page_scraper = get_service('page-scraper', PageScraperStub, delphai_environment=
 translation = get_service('translation', TranslationStub, delphai_environment='common')
 
 
+def mask_company_names(companies: List[service_pb2.Company], text: str):
+  masks: Dict[str, str] = {}
+  for index, company in enumerate(companies):
+    mask = f'<<NE{index}>>'
+    text = text.replace(company.name, mask)
+    masks[company.name]
+  return text, masks
+
+
+def unmask_company_names(masks: Dict[str, str], text: str):
+  for company_name, mask in masks.items():
+    text.replace(mask, company_name)
+  return text
+
+
 async def add_article(request: service_pb2.AddArticleRequest):
   logging.info(f'saving article from {request.url}')
   response = service_pb2.AddArticleResponse()
@@ -29,11 +45,13 @@ async def add_article(request: service_pb2.AddArticleRequest):
   response.lang = metadata.lang
   response.content = text.text
   if metadata.lang != 'en':
-    title_translation_task = translation.translate(TranslateRequest(text=response.title, method='azure'))
-    content_translation_task = translation.translate(TranslateRequest(text=response.content, method='azure'))
+    masked_title, title_masks = mask_company_names(request.companies, response.title)
+    masked_content, content_masks = mask_company_names(request.companies, response.content)
+    title_translation_task = translation.translate(TranslateRequest(text=masked_title, method='azure'))
+    content_translation_task = translation.translate(TranslateRequest(text=masked_content, method='azure'))
     title, content = await asyncio.gather(title_translation_task, content_translation_task)
-    response.translated_title = title.translation
-    response.translated_content = content.translation
+    response.translated_title = unmask_company_names(title_masks, title.translation)
+    response.translated_content = unmask_company_names(content_masks, content.translation)
 
   model = 'ner-tagger'
   content = response.content
