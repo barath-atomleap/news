@@ -29,7 +29,7 @@ def process_snapshot(input: str, snapshot: Snapshot, result):
   url_split = input.rstrip('/').replace('http://', '').replace('https://', '').split('/')
   dir_name = '/'.join(url_split[:-1])
   file_name = url_split[-1]
-  snapshot.snapshot_dir = f'.snapshots/{dir_name}'
+  snapshot.snapshot_dir = f'snapshots/{dir_name}'
   processed_result = MessageToDict(result, preserving_proto_field_name=True)
   content: str = processed_result['content']
   processed_result['url'] = input

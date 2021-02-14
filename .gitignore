@@ -6,8 +6,3 @@ src/proto
 __pycache__
 *_pb2.py
 .pytest_cache
-.chart
-tilt_modules
-.helm
-.data
-.snapshots
