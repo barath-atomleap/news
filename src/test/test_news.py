@@ -5,7 +5,7 @@ from proto.news_pb2 import AddArticleRequest, AddArticleResponse
 from pytest_snapshot.plugin import Snapshot
 from test.conftest import process_snapshot, get_test_urls
 
-test_urls = get_test_urls(5)
+test_urls = get_test_urls(10)
 
 
 @pytest.mark.asyncio
