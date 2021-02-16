@@ -19,9 +19,9 @@ Assistant Editor
 
 ### Read Next
 
-*   Becoming a Second Source for Ventilator Parts
 *   Hard Milling Replaces Hand Grinding in Finishing Die Components
-*   Video: The Importance of Reshoring Mold and Die Manufacturing
+*   Use Your Machinists to Make Dies
+*   Answering Five Honing FAQs
 
 Chiron’s five-axis, twin-spindle series DZ 22 features a spindle clearance of 600 mm and is designed to completely and rapidly machine complex, large workpieces — including housings for electric motors and transmissions, oil pumps, chassis components and more. The company also offers a four-axis variant of the Series 22, and both versions can integrate Chiron SmartLine modules.
 
@@ -52,21 +52,21 @@ Additionally, the DZ 22 is available with a ball screw drive or a linear direct 
 
 ### Resources
 
+#### Find a Manufacturing Supplier or Service
+
+#### Subscribe to Modern Machine Shop Magazine
+
 #### Get MMS E-newsletters In Your Inbox
 
 #### Read the Latest Issue of Modern Machine Shop
 
-#### Top Shops Share Their Top Technology
-
 #### How to Become a Defense Industry Machined-Parts Supplier
 
-#### Access the Full Modern Archive
-
-#### Subscribe to Modern Machine Shop Magazine
-
-#### Find a Manufacturing Supplier or Service
-
 #### Browse New Products from the Editors of Modern
+
+#### Top Shops Share Their Top Technology
+
+#### Access the Full Modern Archive
 
 Next up X
 

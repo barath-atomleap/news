@@ -191,9 +191,11 @@ Login
 
 To meet the criteria of ever-expanding customer demands, Chiron has now launched its latest machining centre, the 5-axis Chiron DZ22W.
 
-Related Company
+Related Companies
 
 Chiron-Werke GmbH & Co. KG
+
+CNC Software Inc.
 
 Chiron's DZ22W 5-axis machining centre has a twin-spindle configuration that can simultaneously work at speed in the 620 by 650 by 600 mm X, Y and Z-axes work envelope.
 

@@ -70,11 +70,9 @@ von Walther Rosenberger
 
 Merken
 
-von Walther Rosenberger
+von Mirjam Moll
 
 Merken
-
-Nur für Abonnenten
 
 Das ist nicht das Ende... Auf unserer Startseite finden Sie alles,  
 was gerade wichtig ist.
